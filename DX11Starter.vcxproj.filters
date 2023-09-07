@@ -11,43 +11,8 @@
     </Filter>
     <Filter Include="Shaders">
       <UniqueIdentifier>{acfc80f5-04ae-4b87-a7f6-6b4ba0af6a98}</UniqueIdentifier>
-    </Filter>  
+    </Filter>
   </ItemGroup>
-    <ItemGroup>
-        <Filter Include="ImGui">
-            <Filter>Header Files</Filter>
-		    <UniqueIdentifier>{908BADE7-2A58-333B-AD9B-5E1617448503}</UniqueIdentifier>
-            <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-        </Filter>
-    </ItemGroup>
-	
-<ItemGroup>
-	<ClCompile Include="igmui.h">
-		<Filter>ImGui</Filter>
-	</ClCompile>
-	<ClCompile Include="imconfig.h">
-		<Filter>ImGui</Filter>
-	</ClCompile>
-    <ClCompile Include="imgui_impl_dx11.h">
-		<Filter>ImGui</Filter>
-	</ClCompile>
-    <ClCompile Include="imgui_impl_win32.h">
-		<Filter>ImGui</Filter>
-	</ClCompile>
-    <ClCompile Include="imgui_internal.h">
-		<Filter>ImGui</Filter>
-	</ClCompile>
-    <ClCompile Include="imstb_rectpack.h">
-		<Filter>ImGui</Filter>
-	</ClCompile>
-    <ClCompile Include="imstb_textedit.h">
-		<Filter>ImGui</Filter>
-	</ClCompile>
-    <ClCompile Include="imstb_truetype.h">
-		<Filter>ImGui</Filter>
-	</ClCompile>
-</ItemGroup>
-	
   <ItemGroup>
     <ClCompile Include="DXCore.cpp">
       <Filter>Source Files</Filter>
