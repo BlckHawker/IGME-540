@@ -171,10 +171,6 @@ void Game::CreateGeometry()
 	XMFLOAT4 black = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
 	XMFLOAT4 orange = XMFLOAT4(1.0f, 0.54f, 0.0f, 1.0f);
 
-	XMFLOAT4 cornflowerBlue = XMFLOAT4(0.4f, 0.6f, 0.75f, 1.0f);
-
-
-
 	Vertex triangleVertices[] =
 	{
 		{ XMFLOAT3(+0.0f, +0.2f, +0.0f), red },
@@ -252,7 +248,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	for (std::shared_ptr<Mesh> mesh : meshes)
 	{
-		mesh->Draw(context);
+		mesh->Draw();
 	}
 
 	// Frame END
