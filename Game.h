@@ -23,6 +23,9 @@ public:
 
 private:
 
+	//helper method for igmu
+	void ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsigned int windowWidth);
+
 	// Initialization helper methods - feel free to customize, combine, remove, etc.
 	void LoadShaders(); 
 	void CreateGeometry();
@@ -31,6 +34,13 @@ private:
 	//  - This is a smart pointer for objects that abide by the
 	//     Component Object Model, which DirectX objects do
 	//  - More info here: https://github.com/Microsoft/DirectXTK/wiki/ComPtr
+
+	//used to edit shader
+	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer;
+	//color data
+	float colorTintArr[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	//position offsetData
+	float offsetArr[3] = { 0.0f, 0.0f, 0.0f };
 
 	// Buffers to hold actual geometry data
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer;

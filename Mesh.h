@@ -21,16 +21,19 @@ public:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> GetVertexBuffer(); //method to return the pointer to the vertex buffer object
 	Microsoft::WRL::ComPtr<ID3D11Buffer> GetIndexBuffer(); //method, which does the same thing for the index buffer
 	int GetIndexCount(); //method, which returns the number of indices this mesh contains
-	void Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context); //method, which sets the buffers and tells DirectX to draw the correct number of indices
+	void Draw(); //method, which sets the buffers and tells DirectX to draw the correct number of indices
 private:
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
 	//     Component Object Model, which DirectX objects do
 	//  - More info here: https://github.com/Microsoft/DirectXTK/wiki/ComPtr
 
+	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context;
+
 	// Buffers to hold actual geometry data
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer;
+
 	int indexCount;
 };
 

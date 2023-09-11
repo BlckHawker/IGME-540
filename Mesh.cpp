@@ -12,6 +12,7 @@ Mesh::Mesh(Vertex* vertexObjects,
 	Microsoft::WRL::ComPtr<ID3D11Device> device,
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
+	this->context = context;
 	this->indexCount = indexCount;
 
 	// Create a VERTEX BUFFER
@@ -88,7 +89,7 @@ int Mesh::GetIndexCount()
 	return indexCount;
 }
 
-void Mesh::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+void Mesh::Draw()
 {
 	// DRAW geometry
 	// - These steps are generally repeated for EACH object you draw
