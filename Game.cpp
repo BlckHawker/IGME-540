@@ -3,8 +3,13 @@
 #include "Input.h"
 #include "PathHelpers.h"
 #include "Mesh.h"
+#include "BufferStructs.h"
 #include <memory>
 #include <vector>
+
+#include "ImGui/imgui.h"
+#include "ImGui/imgui_impl_dx11.h"
+#include "ImGui/imgui_impl_win32.h"
 
 // Needed for a helper function to load pre-compiled shader files
 #pragma comment(lib, "d3dcompiler.lib")
@@ -50,6 +55,11 @@ Game::~Game()
 
 	// Call Release() on any Direct3D objects made within this class
 	// - Note: this is unnecessary for D3D objects stored in ComPtrs
+
+	// ImGui clean up
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
 }
 
 // --------------------------------------------------------
@@ -58,6 +68,31 @@ Game::~Game()
 // --------------------------------------------------------
 void Game::Init()
 {
+	 unsigned int size = (sizeof(VertexShaderExternalData) + 15) / 16 * 16;
+
+	 // Describe the constant buffer
+	 D3D11_BUFFER_DESC cbDesc = {}; // Sets struct to all zeros
+	 cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	 cbDesc.ByteWidth = size; // Must be a multiple of 16
+	 cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	 cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+
+	 //create the buffer
+	 device->CreateBuffer(&cbDesc, 0, vsConstantBuffer.GetAddressOf());
+
+	// Initialize ImGui
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+
+	// Pick a style (uncomment one of these 3)
+	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsLight();
+	//ImGui::StyleColorsClassic();
+	// 
+	// Setup Platform/Renderer backends
+	ImGui_ImplWin32_Init(hWnd);
+	ImGui_ImplDX11_Init(device.Get(), context.Get());
+
 	// Helper methods for loading shaders, creating some basic
 	// geometry to draw and some simple camera matrices.
 	//  - You'll be expanding and/or replacing these later
@@ -224,10 +259,39 @@ void Game::OnResize()
 // --------------------------------------------------------
 void Game::Update(float deltaTime, float totalTime)
 {
+	ImGuiInitialization(deltaTime, this->windowHeight, this->windowWidth);
+
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::GetInstance().KeyDown(VK_ESCAPE))
 		Quit();
 }
+
+void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsigned int windowWidth)
+{
+	// Feed fresh input data to ImGui
+	ImGuiIO& io = ImGui::GetIO();
+	io.DeltaTime = deltaTime;
+	io.DisplaySize.x = (float)windowWidth;
+	io.DisplaySize.y = (float)windowHeight;
+	// Reset the frame
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+	// Determine new input capture
+	Input& input = Input::GetInstance();
+	input.SetKeyboardCapture(io.WantCaptureKeyboard);
+	input.SetMouseCapture(io.WantCaptureMouse);
+
+	ImGui::Text("FPS: %f", ImGui::GetIO().Framerate);
+	ImGui::Text("Display: %dx%d", windowWidth, windowHeight);
+	ImGui::DragFloat3("offset", offsetArr, 0.01f, -1.0f, 1.0f);
+	ImGui::ColorEdit4("color tint", colorTintArr);
+	
+	// Show the demo window
+	//ImGui::ShowDemoWindow();
+}
+
+
 
 // --------------------------------------------------------
 // Clear the screen, redraw everything, present to the user
@@ -246,10 +310,29 @@ void Game::Draw(float deltaTime, float totalTime)
 		context->ClearDepthStencilView(depthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
 
+	VertexShaderExternalData vsData;
+	vsData.colorTint = XMFLOAT4(colorTintArr[0], colorTintArr[1], colorTintArr[2], colorTintArr[3]);
+	vsData.offset = XMFLOAT3(offsetArr[0], offsetArr[1], offsetArr[2]);
+
+	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
+	context->Map(vsConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
+	memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));
+	context->Unmap(vsConstantBuffer.Get(), 0);
+
+	context->VSSetConstantBuffers(
+		0, // Which slot (register) to bind the buffer to?
+		1, // How many are we activating? Can do multiple at once
+		vsConstantBuffer.GetAddressOf()); // Array of buffers (or the address of one)
+
+	//start drawing
 	for (std::shared_ptr<Mesh> mesh : meshes)
 	{
 		mesh->Draw();
 	}
+
+	// Draw ImGui
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
 	// Frame END
 	// - These should happen exactly ONCE PER FRAME
