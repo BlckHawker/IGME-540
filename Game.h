@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 #include "Mesh.h"
+#include "Entity.h"
 
 class Game : public DXCore
 {
@@ -53,5 +54,9 @@ private:
 
 	//meshes to draw
 	std::vector<std::shared_ptr<Mesh>> meshes;
+
+	//entity stuff
+	const int entityNum = 3; //the amount of entities that will spawn
+	std::vector<Entity> entities;
 };
 
