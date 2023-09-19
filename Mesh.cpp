@@ -84,6 +84,11 @@ Microsoft::WRL::ComPtr<ID3D11Buffer> Mesh::GetIndexBuffer()
 	return indexBuffer;
 }
 
+Microsoft::WRL::ComPtr<ID3D11DeviceContext> Mesh::GetContext()
+{
+	return context;
+}
+
 int Mesh::GetIndexCount()
 {
 	return indexCount;

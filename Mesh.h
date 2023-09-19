@@ -20,6 +20,7 @@ public:
 	~Mesh();
 	Microsoft::WRL::ComPtr<ID3D11Buffer> GetVertexBuffer(); //method to return the pointer to the vertex buffer object
 	Microsoft::WRL::ComPtr<ID3D11Buffer> GetIndexBuffer(); //method, which does the same thing for the index buffer
+	Microsoft::WRL::ComPtr<ID3D11DeviceContext> GetContext();
 	int GetIndexCount(); //method, which returns the number of indices this mesh contains
 	void Draw(); //method, which sets the buffers and tells DirectX to draw the correct number of indices
 private:
