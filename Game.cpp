@@ -240,6 +240,11 @@ void Game::CreateGeometry()
 	meshes.push_back(std::make_shared<Mesh>(triangleVertices, 3, triangleIndices, 3, device, context));
 	meshes.push_back(std::make_shared<Mesh>(squareVertices,   4, squareIndices,   6, device, context));
 	meshes.push_back(std::make_shared<Mesh>(arrowVerticies,   6, arrowIndices,    6, device, context));
+
+	for (int i = 0; i < entityNum; i++)
+	{
+		entities.push_back(Entity(meshes[i % meshes.size()]));
+	}
 }
 
 
@@ -282,10 +287,50 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 	input.SetKeyboardCapture(io.WantCaptureKeyboard);
 	input.SetMouseCapture(io.WantCaptureMouse);
 
-	ImGui::Text("FPS: %f", ImGui::GetIO().Framerate);
-	ImGui::Text("Display: %dx%d", windowWidth, windowHeight);
-	ImGui::DragFloat3("offset", offsetArr, 0.01f, -1.0f, 1.0f);
-	ImGui::ColorEdit4("color tint", colorTintArr);
+	//assaigment 3
+	//ImGui::Text("FPS: %f", ImGui::GetIO().Framerate);
+	//ImGui::Text("Display: %dx%d", windowWidth, windowHeight);
+	//ImGui::DragFloat3("offset", offsetArr, 0.01f, -1.0f, 1.0f);
+	//ImGui::ColorEdit4("color tint", colorTintArr);
+
+	//assignment 4
+	if (ImGui::TreeNode("Trees"))
+	{
+		for (int i = 1; i < entityNum + 1; i++)
+		{
+			int index = i - 1;
+			if (ImGui::TreeNode((void*)(intptr_t)i, "Entity %d", i))
+			{
+				XMFLOAT3 pos = entities[index].GetTransform()->GetPosition();
+				XMFLOAT3 rot = entities[index].GetTransform()->GetPitchYawRoll();
+				XMFLOAT3 scale = entities[index].GetTransform()->GetScale();
+				XMFLOAT4 colorTint = entities[index].GetColorTint();
+
+				if (ImGui::DragFloat3("Position", &pos.x, 0.01f, -1.0f, 1.0f))
+				{
+					entities[index].GetTransform()->SetPosition(pos);
+				}
+
+				if (ImGui::DragFloat3("Rotation (radians)", &rot.x, 0.01f, 0.0f, 6.28f))
+				{
+					entities[index].GetTransform()->SetRotation(rot);
+				}
+
+				if (ImGui::DragFloat3("Scale", &scale.x, 0.01f, 0.0f, 2.0f))
+				{
+					entities[index].GetTransform()->SetScale(scale);
+				}
+
+				
+				if (ImGui::ColorEdit4("Color Tint", &colorTint.x))
+				{
+					entities[index].SetColorTint(colorTint);
+				}
+				ImGui::TreePop();
+			}
+		}
+		ImGui::TreePop();
+	}
 	
 	// Show the demo window
 	//ImGui::ShowDemoWindow();
@@ -310,24 +355,15 @@ void Game::Draw(float deltaTime, float totalTime)
 		context->ClearDepthStencilView(depthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
 
-	VertexShaderExternalData vsData;
-	vsData.colorTint = XMFLOAT4(colorTintArr[0], colorTintArr[1], colorTintArr[2], colorTintArr[3]);
-	vsData.offset = XMFLOAT3(offsetArr[0], offsetArr[1], offsetArr[2]);
-
-	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
-	context->Map(vsConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
-	memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));
-	context->Unmap(vsConstantBuffer.Get(), 0);
-
 	context->VSSetConstantBuffers(
 		0, // Which slot (register) to bind the buffer to?
 		1, // How many are we activating? Can do multiple at once
 		vsConstantBuffer.GetAddressOf()); // Array of buffers (or the address of one)
 
 	//start drawing
-	for (std::shared_ptr<Mesh> mesh : meshes)
+	for (Entity entity : entities)
 	{
-		mesh->Draw();
+		entity.Draw(vsConstantBuffer);
 	}
 
 	// Draw ImGui
