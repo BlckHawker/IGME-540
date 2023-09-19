@@ -306,7 +306,6 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 				XMFLOAT3 scale = entities[index].GetTransform()->GetScale();
 				XMFLOAT4 colorTint = entities[index].GetColorTint();
 
-
 				if (ImGui::DragFloat3("Position", &pos.x, 0.01f, -1.0f, 1.0f))
 				{
 					entities[index].GetTransform()->SetPosition(pos);
@@ -322,11 +321,11 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 					entities[index].GetTransform()->SetScale(scale);
 				}
 
-				if (ImGui::DragFloat4("Color Tint", &colorTint.x, 1.0f, 0.0f, 255.0f))
+				
+				if (ImGui::ColorEdit4("Color Tint", &colorTint.x))
 				{
 					entities[index].SetColorTint(colorTint);
 				}
-
 				ImGui::TreePop();
 			}
 		}
@@ -334,7 +333,7 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 	}
 	
 	// Show the demo window
-	ImGui::ShowDemoWindow();
+	//ImGui::ShowDemoWindow();
 }
 
 

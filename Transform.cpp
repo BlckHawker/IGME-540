@@ -1,9 +1,9 @@
 #include "Transform.h"
 Transform::Transform()
 {
-	position = DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f);
-	scale = DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f);
+	position = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 	rotation = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+	scale = DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f);
 	dirtyMatrix = false;
 	XMStoreFloat4x4(&worldMatrix, DirectX::XMMatrixIdentity());
 	XMStoreFloat4x4(&worldInverseTransposeMatrix, DirectX::XMMatrixIdentity());
@@ -16,9 +16,9 @@ void Transform::UpdateMatrices()
 	//then update the matrix right before it's actually returned by a GetWorldMatrix() method, and only if it's dirty.
 
 	DirectX::XMMATRIX translation = DirectX::XMMatrixTranslation(position.x, position.y, position.z);
-	DirectX::XMMATRIX scale = DirectX::XMMatrixScaling(this->scale.x, this->scale.y, this->scale.z);
-	DirectX::XMMATRIX rotation = DirectX::XMMatrixTranslation(this->rotation.x, this->rotation.y, this->rotation.z);
-	DirectX::XMMATRIX world = XMMatrixMultiply(XMMatrixMultiply(scale, rotation), translation);
+	DirectX::XMMATRIX sc = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z);
+	DirectX::XMMATRIX rot = DirectX::XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
+	DirectX::XMMATRIX world = XMMatrixMultiply(XMMatrixMultiply(sc, rot), translation);
 
 	XMStoreFloat4x4(&worldMatrix, world);
 	XMStoreFloat4x4(&worldInverseTransposeMatrix, XMMatrixInverse(0, XMMatrixTranspose(world)));
