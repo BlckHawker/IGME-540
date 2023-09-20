@@ -23,7 +23,6 @@ public:
 	void Draw(float deltaTime, float totalTime);
 
 private:
-
 	//helper method for igmu
 	void ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsigned int windowWidth);
 
@@ -38,10 +37,6 @@ private:
 
 	//used to edit shader
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer;
-	//color data
-	float colorTintArr[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	//position offsetData
-	float offsetArr[3] = { 0.0f, 0.0f, 0.0f };
 
 	// Buffers to hold actual geometry data
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer;
@@ -56,7 +51,15 @@ private:
 	std::vector<std::shared_ptr<Mesh>> meshes;
 
 	//entity stuff
-	const int entityNum = 3; //the amount of entities that will spawn
+	const int entityNum = 5; //the amount of entities that will spawn
 	std::vector<Entity> entities;
+	//value for trasnalting mesh
+	float translationValue = 0;
+	float rotationValue = 0;
+	float scaleValue = 0;
+	bool automaticTranslation = true;
+	bool automaticRotation = true;
+	bool automaticScaling = true;
+
 };
 

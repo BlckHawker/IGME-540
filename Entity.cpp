@@ -22,27 +22,26 @@ std::shared_ptr<Transform> Entity::GetTransform()
 
 void Entity::Draw(Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer)
 {
-
 	//Set the correct Constant Buffer resource for the Vertex Shader stage (done in assignment 3): 
-	// -Done in game.cpp?
+	// -Done in game.cpp
+	
 	//Collect data for the current entity in a C++ struct (done in assignment 3, but now updated to
 	//hold the world matrix from the entity you're about to draw): 
-	// -world matrix from transform and color tint from passing it in (entity lcaol variable)
 	VertexShaderExternalData vsData;
 
 	vsData.colorTint = colorTint;
 	vsData.worldMatrix = object->GetWorldMatrix();
 
 	//Map / memcpy / Unmap the Constant Buffer resource(done in assignment 3)
-	// -needs to be done in this function
 	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
 	mesh->GetContext()->Map(vsConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
 	memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));
 	mesh->GetContext()->Unmap(vsConstantBuffer.Get(), 0);
+
 	//Set the correct Vertex and Index Buffers(done in assignment 2)
-	// -Done in either mesh.cpp?
+	// -Done in mesh.cpp
 	//Tell D3D to render using the currently bound resources(done in assignment 2)
-	// -Done in game.cpp?
+	// -Done in game.cpp
 	mesh->Draw();
 }
 

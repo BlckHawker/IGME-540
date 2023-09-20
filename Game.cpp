@@ -265,6 +265,39 @@ void Game::OnResize()
 void Game::Update(float deltaTime, float totalTime)
 {
 	ImGuiInitialization(deltaTime, this->windowHeight, this->windowWidth);
+	
+	if (automaticTranslation)
+	{
+		translationValue += .5f * deltaTime;
+		if (translationValue > 1.0f)
+			translationValue = -1;
+
+		XMFLOAT3 pos = entities[0].GetTransform()->GetPosition();
+		pos.x = translationValue;
+		entities[0].GetTransform()->SetPosition(pos);
+	}
+
+	if (automaticRotation)
+	{
+		rotationValue += 2.0f * deltaTime;
+		if (rotationValue > 6.28f)
+			rotationValue = 0;
+
+		XMFLOAT3 rot = entities[1].GetTransform()->GetPitchYawRoll();
+		rot.z = rotationValue;
+		entities[1].GetTransform()->SetRotation(rot);
+	}
+
+	if (automaticScaling)
+	{
+		scaleValue += .5f * deltaTime;
+		if (scaleValue > 2.0f)
+			scaleValue = 0;
+
+		XMFLOAT3 sca = entities[2].GetTransform()->GetScale();
+		sca.y = scaleValue;
+		entities[2].GetTransform()->SetScale(sca);
+	}
 
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::GetInstance().KeyDown(VK_ESCAPE))
@@ -287,13 +320,14 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 	input.SetKeyboardCapture(io.WantCaptureKeyboard);
 	input.SetMouseCapture(io.WantCaptureMouse);
 
-	//assaigment 3
-	//ImGui::Text("FPS: %f", ImGui::GetIO().Framerate);
-	//ImGui::Text("Display: %dx%d", windowWidth, windowHeight);
-	//ImGui::DragFloat3("offset", offsetArr, 0.01f, -1.0f, 1.0f);
-	//ImGui::ColorEdit4("color tint", colorTintArr);
-
 	//assignment 4
+	if (ImGui::Checkbox("Automatic Translation", &automaticTranslation) && automaticTranslation)
+		translationValue = entities[0].GetTransform()->GetPosition().x;
+	if (ImGui::Checkbox("Automatic Rotation", &automaticRotation) && automaticRotation)
+		rotationValue = entities[1].GetTransform()->GetPitchYawRoll().z;
+	if (ImGui::Checkbox("Automatic Scaling", &automaticScaling) && automaticScaling)
+		scaleValue = entities[2].GetTransform()->GetScale().y;
+
 	if (ImGui::TreeNode("Trees"))
 	{
 		for (int i = 1; i < entityNum + 1; i++)
