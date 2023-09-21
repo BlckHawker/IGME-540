@@ -28,9 +28,7 @@ void Transform::UpdateMatrices()
 void Transform::SetPosition(float x, float y, float z)
 {
 	if (position.x == x && position.y == y && position.z == z)
-	{
 		return;
-	}
 	position = DirectX::XMFLOAT3(x, y, z);
 	dirtyMatrix = true;
 }
