@@ -267,15 +267,7 @@ void Game::Update(float deltaTime, float totalTime)
 	ImGuiInitialization(deltaTime, this->windowHeight, this->windowWidth);
 	
 	if (automaticTranslation)
-	{
-		translationValue += .5f * deltaTime;
-		if (translationValue > 1.0f)
-			translationValue = -1;
-
-		XMFLOAT3 pos = entities[0].GetTransform()->GetPosition();
-		pos.x = translationValue;
-		entities[0].GetTransform()->SetPosition(pos);
-	}
+		entities[0].GetTransform()->SetPosition(sinf(totalTime),0,0);
 
 	if (automaticRotation)
 	{
@@ -289,15 +281,7 @@ void Game::Update(float deltaTime, float totalTime)
 	}
 
 	if (automaticScaling)
-	{
-		scaleValue += .5f * deltaTime;
-		if (scaleValue > 2.0f)
-			scaleValue = 0;
-
-		XMFLOAT3 sca = entities[2].GetTransform()->GetScale();
-		sca.y = scaleValue;
-		entities[2].GetTransform()->SetScale(sca);
-	}
+		entities[2].GetTransform()->SetScale(1, sinf(totalTime), 1);
 
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::GetInstance().KeyDown(VK_ESCAPE))
@@ -321,24 +305,30 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 	input.SetMouseCapture(io.WantCaptureMouse);
 
 	//assignment 4
-	if (ImGui::Checkbox("Automatic Translation", &automaticTranslation) && automaticTranslation)
-		translationValue = entities[0].GetTransform()->GetPosition().x;
+
 	if (ImGui::Checkbox("Automatic Rotation", &automaticRotation) && automaticRotation)
 		rotationValue = entities[1].GetTransform()->GetPitchYawRoll().z;
-	if (ImGui::Checkbox("Automatic Scaling", &automaticScaling) && automaticScaling)
-		scaleValue = entities[2].GetTransform()->GetScale().y;
 
 	if (ImGui::TreeNode("Trees"))
 	{
 		for (int i = 1; i < entityNum + 1; i++)
 		{
 			int index = i - 1;
+			Entity e = entities[index];
+			std::shared_ptr<Transform> t = e.GetTransform();
+
 			if (ImGui::TreeNode((void*)(intptr_t)i, "Entity %d", i))
 			{
-				XMFLOAT3 pos = entities[index].GetTransform()->GetPosition();
-				XMFLOAT3 rot = entities[index].GetTransform()->GetPitchYawRoll();
-				XMFLOAT3 scale = entities[index].GetTransform()->GetScale();
-				XMFLOAT4 colorTint = entities[index].GetColorTint();
+				//XMFLOAT3 pos = entities[index].GetTransform()->GetPosition();
+				//XMFLOAT3 rot = entities[index].GetTransform()->GetPitchYawRoll();
+				//XMFLOAT3 scale = entities[index].GetTransform()->GetScale();
+				//XMFLOAT4 colorTint = entities[index].GetColorTint();
+
+				XMFLOAT3 pos = t->GetPosition();
+				XMFLOAT3 rot = t->GetPitchYawRoll();
+				XMFLOAT3 scale = t->GetScale();
+				XMFLOAT4 colorTint = e.GetColorTint();
+
 
 				if (ImGui::DragFloat3("Position", &pos.x, 0.01f, -1.0f, 1.0f))
 				{

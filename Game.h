@@ -54,9 +54,7 @@ private:
 	const int entityNum = 5; //the amount of entities that will spawn
 	std::vector<Entity> entities;
 	//value for trasnalting mesh
-	float translationValue = 0;
 	float rotationValue = 0;
-	float scaleValue = 0;
 	bool automaticTranslation = true;
 	bool automaticRotation = true;
 	bool automaticScaling = true;
