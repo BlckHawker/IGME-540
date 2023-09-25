@@ -68,7 +68,40 @@ Game::~Game()
 // --------------------------------------------------------
 void Game::Init()
 {
-	 unsigned int size = (sizeof(VertexShaderExternalData) + 15) / 16 * 16;
+	float aspectRatio = (float)this->windowWidth / this->windowHeight;
+
+	for (int i = 0; i < 3; i++)
+	{
+		cameras.push_back(std::make_shared<Camera>(aspectRatio));
+
+		float xPos;
+		float yRotation;
+		float fov;
+
+		switch (i)
+		{
+			case 0:
+				xPos = -1;
+				yRotation = DirectX::XM_PIDIV4;
+				fov = DirectX::XM_PIDIV4;
+				break;
+			case 2:
+				xPos = 1;
+				yRotation = -DirectX::XM_PIDIV4;
+				fov = DirectX::XM_PI / 3;
+				break;
+		}
+
+		if (i != 1)
+		{
+			cameras[i]->GetTransform()->MoveAbsolute(xPos, 0, 0);
+			cameras[i]->GetTransform()->Rotate(0.0f, yRotation, 0.0f);
+			cameras[i]->SetFieldOfView(fov, aspectRatio);
+		}
+
+	}
+	
+	unsigned int size = (sizeof(VertexShaderExternalData) + 15) / 16 * 16;
 
 	 // Describe the constant buffer
 	 D3D11_BUFFER_DESC cbDesc = {}; // Sets struct to all zeros
@@ -247,6 +280,39 @@ void Game::CreateGeometry()
 	}
 }
 
+void Game::CameraInput(float deltaTime)
+{
+	Input& input = Input::GetInstance();
+	DirectX::XMFLOAT3 moveVector = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	DirectX::XMFLOAT3 rotateVectors = XMFLOAT3(0.0f, 0.0f, 0.0f);
+
+	//W, S – Forward or backwards(This is relative movement)
+	if (input.KeyDown('W'))
+		moveVector.z = deltaTime;
+
+	else if (input.KeyDown('S'))
+		moveVector.z = -deltaTime;
+
+	//A, D – Strafe left or right(Also relative movement)
+	if (input.KeyDown('A'))
+		moveVector.x = -deltaTime;
+
+	else if (input.KeyDown('D'))
+		moveVector.x = deltaTime;
+
+	/* Q - Move up along the world’s Y axis(Absolute movement)
+	   E - Move down along the world’s Y axis(Absolute movement)*/
+	if (input.KeyDown('Q'))
+		moveVector.y = deltaTime;
+
+	else if (input.KeyDown('E'))
+		moveVector.y = -deltaTime;
+
+	if (input.MouseLeftDown())
+		rotateVectors = XMFLOAT3((float)input.GetMouseYDelta(), (float)input.GetMouseXDelta(), 0.0f);
+
+	cameras[activeCameraIndex]->Update(moveVector, rotateVectors);
+}
 
 // --------------------------------------------------------
 // Handle resizing to match the new window size.
@@ -257,6 +323,9 @@ void Game::OnResize()
 {
 	// Handle base-level DX resize stuff
 	DXCore::OnResize();
+
+	for (std::shared_ptr<Camera> camera : cameras)
+		camera->UpdateProjectionMatrix((float)this->windowWidth / this->windowHeight);
 }
 
 // --------------------------------------------------------
@@ -283,6 +352,8 @@ void Game::Update(float deltaTime, float totalTime)
 	if (automaticScaling)
 		entities[2].GetTransform()->SetScale(1, sinf(totalTime), 1);
 
+	CameraInput(deltaTime);
+
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::GetInstance().KeyDown(VK_ESCAPE))
 		Quit();
@@ -304,12 +375,49 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 	input.SetKeyboardCapture(io.WantCaptureKeyboard);
 	input.SetMouseCapture(io.WantCaptureMouse);
 
-	//assignment 4
+	if (ImGui::TreeNode("Automatic Transformations"))
+	{
+		ImGui::Checkbox("Automatic Translation", &automaticTranslation);
+		ImGui::Checkbox("Automatic Scaling", &automaticScaling);
+		if (ImGui::Checkbox("Automatic Rotation", &automaticRotation) && automaticRotation)
+			rotationValue = entities[1].GetTransform()->GetPitchYawRoll().z;
+		ImGui::TreePop();
+	}
 
-	if (ImGui::Checkbox("Automatic Rotation", &automaticRotation) && automaticRotation)
-		rotationValue = entities[1].GetTransform()->GetPitchYawRoll().z;
+	if (ImGui::TreeNode("Controls"))
+	{
+		ImGui::Text("Q/E: Up/Down");
+		ImGui::Text("W/S: Fowards/Backwards");
+		ImGui::Text("A/D: Left/Right");
+		ImGui::TreePop();
+	}
 
-	if (ImGui::TreeNode("Trees"))
+	if (ImGui::TreeNode("Active Camera Selection"))
+	{
+		ImGui::RadioButton("Camera 1", &activeCameraIndex, 0); ImGui::SameLine();
+		ImGui::RadioButton("Camera 2", &activeCameraIndex, 1); ImGui::SameLine();
+		ImGui::RadioButton("Camera 3", &activeCameraIndex, 2);
+		ImGui::TreePop();
+	}
+
+	if (ImGui::TreeNode("Camera Information"))
+	{
+		for (int i = 0; i < cameras.size(); i++)
+		{
+			if (ImGui::TreeNode((void*)(intptr_t)i, "Camera %d", i + 1))
+			{
+				DirectX::XMFLOAT3 pos = cameras[i]->GetTransform()->GetPosition();
+				ImGui::Text("Position: %f %f %f", pos.x, pos.y, pos.z);
+				ImGui::Text("FOV (radiens): %f", cameras[i]->GetFieldOfView());
+				ImGui::Text("Using Perspective View: %d", cameras[i]->UsingPerspectiveProjection());
+				ImGui::TreePop();
+			}
+		}
+	
+		ImGui::TreePop();
+	}
+
+	if (ImGui::TreeNode("Entities"))
 	{
 		for (int i = 1; i < entityNum + 1; i++)
 		{
@@ -319,11 +427,6 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 
 			if (ImGui::TreeNode((void*)(intptr_t)i, "Entity %d", i))
 			{
-				//XMFLOAT3 pos = entities[index].GetTransform()->GetPosition();
-				//XMFLOAT3 rot = entities[index].GetTransform()->GetPitchYawRoll();
-				//XMFLOAT3 scale = entities[index].GetTransform()->GetScale();
-				//XMFLOAT4 colorTint = entities[index].GetColorTint();
-
 				XMFLOAT3 pos = t->GetPosition();
 				XMFLOAT3 rot = t->GetPitchYawRoll();
 				XMFLOAT3 scale = t->GetScale();
@@ -331,25 +434,17 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 
 
 				if (ImGui::DragFloat3("Position", &pos.x, 0.01f, -1.0f, 1.0f))
-				{
-					entities[index].GetTransform()->SetPosition(pos);
-				}
+					t->SetPosition(pos);
 
 				if (ImGui::DragFloat3("Rotation (radians)", &rot.x, 0.01f, 0.0f, 6.28f))
-				{
-					entities[index].GetTransform()->SetRotation(rot);
-				}
+					t->SetRotation(rot);
 
 				if (ImGui::DragFloat3("Scale", &scale.x, 0.01f, 0.0f, 2.0f))
-				{
-					entities[index].GetTransform()->SetScale(scale);
-				}
-
+					t->SetScale(scale);
 				
 				if (ImGui::ColorEdit4("Color Tint", &colorTint.x))
-				{
 					entities[index].SetColorTint(colorTint);
-				}
+
 				ImGui::TreePop();
 			}
 		}
@@ -357,7 +452,7 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 	}
 	
 	// Show the demo window
-	//ImGui::ShowDemoWindow();
+	ImGui::ShowDemoWindow();
 }
 
 
@@ -387,7 +482,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	//start drawing
 	for (Entity entity : entities)
 	{
-		entity.Draw(vsConstantBuffer);
+		entity.Draw(vsConstantBuffer, cameras[activeCameraIndex]);
 	}
 
 	// Draw ImGui

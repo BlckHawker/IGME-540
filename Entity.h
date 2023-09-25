@@ -4,6 +4,7 @@
 #include <memory>
 #include "BufferStructs.h"
 #include <DirectXMath.h>
+#include "Camera.h"
 
 class Entity
 {
@@ -17,7 +18,7 @@ public:
 	std::shared_ptr<Transform> GetTransform();
 	DirectX::XMFLOAT4 GetColorTint();
 	void SetColorTint(DirectX::XMFLOAT4 colorTint);
-	void Draw(Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer);
+	void Draw(Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer, std::shared_ptr<Camera> camera);
 
 
 };

@@ -7,6 +7,7 @@
 #include <memory>
 #include "Mesh.h"
 #include "Entity.h"
+#include "Camera.h"
 
 class Game : public DXCore
 {
@@ -29,6 +30,7 @@ private:
 	// Initialization helper methods - feel free to customize, combine, remove, etc.
 	void LoadShaders(); 
 	void CreateGeometry();
+	void CameraInput(float dt);
 
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
@@ -50,14 +52,16 @@ private:
 	//meshes to draw
 	std::vector<std::shared_ptr<Mesh>> meshes;
 
-	//entity stuff
-	const int entityNum = 5; //the amount of entities that will spawn
-	std::vector<Entity> entities;
-	//value for trasnalting mesh
+	//value for translalting mesh
 	float rotationValue = 0;
 	bool automaticTranslation = true;
 	bool automaticRotation = true;
 	bool automaticScaling = true;
 
+	const int entityNum = 5; //the amount of entities that will spawn
+	std::vector<Entity> entities;
+
+	int activeCameraIndex = 1;
+	std::vector< std::shared_ptr<Camera>> cameras;
 };
 

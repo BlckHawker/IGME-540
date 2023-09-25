@@ -20,7 +20,7 @@ std::shared_ptr<Transform> Entity::GetTransform()
 	return object;
 }
 
-void Entity::Draw(Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer)
+void Entity::Draw(Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer, std::shared_ptr<Camera> camera)
 {
 	//Set the correct Constant Buffer resource for the Vertex Shader stage (done in assignment 3): 
 	// -Done in game.cpp
@@ -31,6 +31,8 @@ void Entity::Draw(Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer)
 
 	vsData.colorTint = colorTint;
 	vsData.worldMatrix = object->GetWorldMatrix();
+	vsData.projectionMatrix = camera->GetProjectionMatrix();
+	vsData.viewMatrix = camera->GetViewMatrix();
 
 	//Map / memcpy / Unmap the Constant Buffer resource(done in assignment 3)
 	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
