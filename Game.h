@@ -8,6 +8,8 @@
 #include "Mesh.h"
 #include "Entity.h"
 #include "Camera.h"
+#include "SimpleShader.h"
+#include "Material.h"
 
 class Game : public DXCore
 {
@@ -37,20 +39,17 @@ private:
 	//     Component Object Model, which DirectX objects do
 	//  - More info here: https://github.com/Microsoft/DirectXTK/wiki/ComPtr
 
-	//used to edit shader
-	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer;
-
 	// Buffers to hold actual geometry data
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer;
 	
 	// Shaders and shader-related constructs
-	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
-	Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
-	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
+	std::shared_ptr<SimplePixelShader> pixelShader;
+	std::shared_ptr<SimpleVertexShader> vertexShader;
 
-	//meshes to draw
 	std::vector<std::shared_ptr<Mesh>> meshes;
+
+	std::vector<std::shared_ptr<Material>> materials;
 
 	//value for translalting mesh
 	float rotationValue = 0;
