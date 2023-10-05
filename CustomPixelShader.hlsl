@@ -3,6 +3,12 @@
 cbuffer ExternalData : register(b0)
 {
     float4 colorTint;
+    float time;
+}
+
+float random(float2 s)
+{
+    return frac(sin(dot(s, float2(12.9898, 78.233))) * 43758.5453123);
 }
 
 // Struct representing the data we expect to receive from earlier pipeline stages
@@ -37,5 +43,9 @@ float4 main(VertexToPixel input) : SV_TARGET
 	//   interpolated for each pixel between the corresponding vertices 
 	//   of the triangle we're rendering
 	
-    return float4(input.uv, 0, 1);
+    float r = sin(input.screenPosition.x);
+    float g = sin(input.screenPosition.y);
+    float b = random(float2(input.screenPosition.x, input.screenPosition.y));
+	
+    return float4(r, g, b, 1);
 }

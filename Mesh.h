@@ -4,6 +4,7 @@
 #include <DirectXMath.h>
 #include <wrl/client.h> // Used for ComPtr - a smart pointer for COM objects
 #include "Vertex.h"
+#include <vector>
 
 //hold geometry data (vertices & indices) in Direct3D buffers
 
@@ -17,6 +18,9 @@ public:
 		int indexCount,
 		Microsoft::WRL::ComPtr<ID3D11Device> device,
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+
+	Mesh(Microsoft::WRL::ComPtr<ID3D11Device> device, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, const char* fileName);
+
 	~Mesh();
 	Microsoft::WRL::ComPtr<ID3D11Buffer> GetVertexBuffer(); //method to return the pointer to the vertex buffer object
 	Microsoft::WRL::ComPtr<ID3D11Buffer> GetIndexBuffer(); //method, which does the same thing for the index buffer
@@ -36,5 +40,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer;
 
 	int indexCount;
+	void CreateVertexAndIndexBuffer(Microsoft::WRL::ComPtr<ID3D11Device> device, Vertex* vertexObjects, int vertexCount, unsigned int* indices);
 };
 

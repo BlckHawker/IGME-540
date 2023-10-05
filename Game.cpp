@@ -137,10 +137,12 @@ void Game::Init()
 // --------------------------------------------------------
 void Game::LoadShaders()
 {
-	vertexShader = std::make_shared<SimpleVertexShader>(device, context,
-		FixPath(L"VertexShader.cso").c_str());
-	pixelShader = std::make_shared<SimplePixelShader>(device, context,
-		FixPath(L"PixelShader.cso").c_str());
+	vertexShaders.push_back(std::make_shared<SimpleVertexShader>(device, context,
+		FixPath(L"VertexShader.cso").c_str()));
+	pixelShaders.push_back(std::make_shared<SimplePixelShader>(device, context,
+		FixPath(L"PixelShader.cso").c_str()));
+	pixelShaders.push_back(std::make_shared<SimplePixelShader>(device, context,
+		FixPath(L"CustomPixelShader.cso").c_str()));
 }
 
 
@@ -157,50 +159,31 @@ void Game::CreateGeometry()
 	XMFLOAT4 black = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
 	XMFLOAT4 orange = XMFLOAT4(1.0f, 0.54f, 0.0f, 1.0f);
 
-	Vertex triangleVertices[] =
-	{
-		{ XMFLOAT3(+0.0f, +0.2f, +0.0f), red },
-		{ XMFLOAT3(+0.2f, -0.2f, +0.0f), blue },
-		{ XMFLOAT3(-0.2f, -0.2f, +0.0f), green },
-	};
+	XMFLOAT3 normal = XMFLOAT3(0, 0, -1);
+	XMFLOAT2 uv = XMFLOAT2(0, 0);
 
-	unsigned int triangleIndices[] = { 0, 1, 2 };
 
-	Vertex squareVertices[] =
-	{
-		{ XMFLOAT3(-0.9f, -0.0f, +0.0f), red },
-		{ XMFLOAT3(-0.4f, -0.0f, +0.0f), orange},
-		{ XMFLOAT3(-0.4f, -0.5f, +0.0f), blue },
-		{ XMFLOAT3(-0.9f, -0.5f, +0.0f), black },
-	};
+	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cube.obj").c_str()));
+	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cylinder.obj").c_str()));
+	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/sphere.obj").c_str()));
 
-	unsigned int squareIndices[] = { 0, 1, 2, 0, 2, 3 };
 
-	Vertex arrowVerticies[] =
-	{
-		{ XMFLOAT3(+0.25f, +0.25f, +0.0f), black },
-		{ XMFLOAT3(+0.25f, +0.75f, +0.0f), black},
-		{ XMFLOAT3(+0.75f, +0.25f, +0.0f), black },
-		{ XMFLOAT3(+0.25f, +0.5f, +0.0f), black },
-		{ XMFLOAT3(+0.5f, +0.5f, +0.0f), black },
-		{ XMFLOAT3(+0.25f, -0.25f, +0.0f), black },
-	};
 
-	unsigned int arrowIndices[] = { 0, 1, 2, 3, 4, 5 };
-
-	meshes.push_back(std::make_shared<Mesh>(triangleVertices, 3, triangleIndices, 3, device, context));
-	meshes.push_back(std::make_shared<Mesh>(squareVertices,   4, squareIndices,   6, device, context));
-	meshes.push_back(std::make_shared<Mesh>(arrowVerticies,   6, arrowIndices,    6, device, context));
-
-	materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(1, 0, 0, 1), pixelShader, vertexShader));
-	materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(0, 1, 0, 1), pixelShader, vertexShader));
-	materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(0, 0, 1, 1), pixelShader, vertexShader));
+	materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(1, 0, 0, 1), pixelShaders[1], vertexShaders[0]));
+	materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(0, 1, 0, 1), pixelShaders[0], vertexShaders[0]));
+	materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(0, 0, 1, 1), pixelShaders[1], vertexShaders[0]));
 
 
 	for (int i = 0; i < entityNum; i++)
 	{
 		entities.push_back(Entity(meshes[i % meshes.size()], materials[i % materials.size()]));
+
+		entities[i].GetTransform()->MoveAbsolute(0, 0, 3);
 	}
+
+	entities[0].GetTransform()->MoveAbsolute(-3, 0, 0);
+	entities[2].GetTransform()->MoveAbsolute(3, 0, 0);
+
 }
 
 void Game::CameraInput(float deltaTime)
@@ -257,23 +240,6 @@ void Game::OnResize()
 void Game::Update(float deltaTime, float totalTime)
 {
 	ImGuiInitialization(deltaTime, this->windowHeight, this->windowWidth);
-	
-	if (automaticTranslation)
-		entities[0].GetTransform()->SetPosition(sinf(totalTime),0,0);
-
-	if (automaticRotation)
-	{
-		rotationValue += 2.0f * deltaTime;
-		if (rotationValue > 6.28f)
-			rotationValue = 0;
-
-		XMFLOAT3 rot = entities[1].GetTransform()->GetPitchYawRoll();
-		rot.z = rotationValue;
-		entities[1].GetTransform()->SetRotation(rot);
-	}
-
-	if (automaticScaling)
-		entities[2].GetTransform()->SetScale(1, sinf(totalTime), 1);
 
 	CameraInput(deltaTime);
 
@@ -297,15 +263,6 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 	Input& input = Input::GetInstance();
 	input.SetKeyboardCapture(io.WantCaptureKeyboard);
 	input.SetMouseCapture(io.WantCaptureMouse);
-
-	if (ImGui::TreeNode("Automatic Transformations"))
-	{
-		ImGui::Checkbox("Automatic Translation", &automaticTranslation);
-		ImGui::Checkbox("Automatic Scaling", &automaticScaling);
-		if (ImGui::Checkbox("Automatic Rotation", &automaticRotation) && automaticRotation)
-			rotationValue = entities[1].GetTransform()->GetPitchYawRoll().z;
-		ImGui::TreePop();
-	}
 
 	if (ImGui::TreeNode("Controls"))
 	{

@@ -44,20 +44,15 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer;
 	
 	// Shaders and shader-related constructs
-	std::shared_ptr<SimplePixelShader> pixelShader;
-	std::shared_ptr<SimpleVertexShader> vertexShader;
+	std::vector<std::shared_ptr<SimpleVertexShader>> vertexShaders;
+	std::vector<std::shared_ptr<SimplePixelShader>> pixelShaders;
 
 	std::vector<std::shared_ptr<Mesh>> meshes;
 
 	std::vector<std::shared_ptr<Material>> materials;
 
-	//value for translalting mesh
-	float rotationValue = 0;
-	bool automaticTranslation = true;
-	bool automaticRotation = true;
-	bool automaticScaling = true;
 
-	const int entityNum = 5; //the amount of entities that will spawn
+	const int entityNum = 3; //the amount of entities that will spawn
 	std::vector<Entity> entities;
 
 	int activeCameraIndex = 1;
