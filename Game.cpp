@@ -3,7 +3,6 @@
 #include "Input.h"
 #include "PathHelpers.h"
 #include "Mesh.h"
-#include "BufferStructs.h"
 #include <memory>
 #include <vector>
 
@@ -68,17 +67,38 @@ Game::~Game()
 // --------------------------------------------------------
 void Game::Init()
 {
-	 unsigned int size = (sizeof(VertexShaderExternalData) + 15) / 16 * 16;
+	float aspectRatio = (float)this->windowWidth / this->windowHeight;
 
-	 // Describe the constant buffer
-	 D3D11_BUFFER_DESC cbDesc = {}; // Sets struct to all zeros
-	 cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	 cbDesc.ByteWidth = size; // Must be a multiple of 16
-	 cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	 cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+	for (int i = 0; i < 3; i++)
+	{
+		cameras.push_back(std::make_shared<Camera>(aspectRatio));
 
-	 //create the buffer
-	 device->CreateBuffer(&cbDesc, 0, vsConstantBuffer.GetAddressOf());
+		float xPos;
+		float yRotation;
+		float fov;
+
+		switch (i)
+		{
+			case 0:
+				xPos = -1;
+				yRotation = DirectX::XM_PIDIV4;
+				fov = DirectX::XM_PIDIV4;
+				break;
+			case 2:
+				xPos = 1;
+				yRotation = -DirectX::XM_PIDIV4;
+				fov = DirectX::XM_PI / 3;
+				break;
+		}
+
+		if (i != 1)
+		{
+			cameras[i]->GetTransform()->MoveAbsolute(xPos, 0, 0);
+			cameras[i]->GetTransform()->Rotate(0.0f, yRotation, 0.0f);
+			cameras[i]->SetFieldOfView(fov, aspectRatio);
+		}
+
+	}
 
 	// Initialize ImGui
 	IMGUI_CHECKVERSION();
@@ -99,27 +119,12 @@ void Game::Init()
 	LoadShaders();
 	CreateGeometry();
 	
-	// Set initial graphics API state
-	//  - These settings persist until we change them
-	//  - Some of these, like the primitive topology & input layout, probably won't change
-	//  - Others, like setting shaders, will need to be moved elsewhere later
-	{
-		// Tell the input assembler (IA) stage of the pipeline what kind of
-		// geometric primitives (points, lines or triangles) we want to draw.  
-		// Essentially: "What kind of shape should the GPU draw with our vertices?"
-		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-		// Ensure the pipeline knows how to interpret all the numbers stored in
-		// the vertex buffer. For this course, all of your vertices will probably
-		// have the same layout, so we can just set this once at startup.
-		context->IASetInputLayout(inputLayout.Get());
+	// Tell the input assembler (IA) stage of the pipeline what kind of
+	// geometric primitives (points, lines or triangles) we want to draw.  
+	// Essentially: "What kind of shape should the GPU draw with our vertices?"
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-		// Set the active vertex and pixel shaders
-		//  - Once you start applying different shaders to different objects,
-		//    these calls will need to happen multiple times per frame
-		context->VSSetShader(vertexShader.Get(), 0, 0);
-		context->PSSetShader(pixelShader.Get(), 0, 0);
-	}
 }
 
 // --------------------------------------------------------
@@ -132,64 +137,12 @@ void Game::Init()
 // --------------------------------------------------------
 void Game::LoadShaders()
 {
-	// BLOBs (or Binary Large OBjects) for reading raw data from external files
-	// - This is a simplified way of handling big chunks of external data
-	// - Literally just a big array of bytes read from a file
-	ID3DBlob* pixelShaderBlob;
-	ID3DBlob* vertexShaderBlob;
-
-	// Loading shaders
-	//  - Visual Studio will compile our shaders at build time
-	//  - They are saved as .cso (Compiled Shader Object) files
-	//  - We need to load them when the application starts
-	{
-		// Read our compiled shader code files into blobs
-		// - Essentially just "open the file and plop its contents here"
-		// - Uses the custom FixPath() helper from Helpers.h to ensure relative paths
-		// - Note the "L" before the string - this tells the compiler the string uses wide characters
-		D3DReadFileToBlob(FixPath(L"PixelShader.cso").c_str(), &pixelShaderBlob);
-		D3DReadFileToBlob(FixPath(L"VertexShader.cso").c_str(), &vertexShaderBlob);
-
-		// Create the actual Direct3D shaders on the GPU
-		device->CreatePixelShader(
-			pixelShaderBlob->GetBufferPointer(),	// Pointer to blob's contents
-			pixelShaderBlob->GetBufferSize(),		// How big is that data?
-			0,										// No classes in this shader
-			pixelShader.GetAddressOf());			// Address of the ID3D11PixelShader pointer
-
-		device->CreateVertexShader(
-			vertexShaderBlob->GetBufferPointer(),	// Get a pointer to the blob's contents
-			vertexShaderBlob->GetBufferSize(),		// How big is that data?
-			0,										// No classes in this shader
-			vertexShader.GetAddressOf());			// The address of the ID3D11VertexShader pointer
-	}
-
-	// Create an input layout 
-	//  - This describes the layout of data sent to a vertex shader
-	//  - In other words, it describes how to interpret data (numbers) in a vertex buffer
-	//  - Doing this NOW because it requires a vertex shader's byte code to verify against!
-	//  - Luckily, we already have that loaded (the vertex shader blob above)
-	{
-		D3D11_INPUT_ELEMENT_DESC inputElements[2] = {};
-
-		// Set up the first element - a position, which is 3 float values
-		inputElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;				// Most formats are described as color channels; really it just means "Three 32-bit floats"
-		inputElements[0].SemanticName = "POSITION";							// This is "POSITION" - needs to match the semantics in our vertex shader input!
-		inputElements[0].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	// How far into the vertex is this?  Assume it's after the previous element
-
-		// Set up the second element - a color, which is 4 more float values
-		inputElements[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;			// 4x 32-bit floats
-		inputElements[1].SemanticName = "COLOR";							// Match our vertex shader input!
-		inputElements[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	// After the previous element
-
-		// Create the input layout, verifying our description against actual shader code
-		device->CreateInputLayout(
-			inputElements,							// An array of descriptions
-			2,										// How many elements in that array?
-			vertexShaderBlob->GetBufferPointer(),	// Pointer to the code of a shader that uses this layout
-			vertexShaderBlob->GetBufferSize(),		// Size of the shader code that uses this layout
-			inputLayout.GetAddressOf());			// Address of the resulting ID3D11InputLayout pointer
-	}
+	vertexShaders.push_back(std::make_shared<SimpleVertexShader>(device, context,
+		FixPath(L"VertexShader.cso").c_str()));
+	pixelShaders.push_back(std::make_shared<SimplePixelShader>(device, context,
+		FixPath(L"PixelShader.cso").c_str()));
+	pixelShaders.push_back(std::make_shared<SimplePixelShader>(device, context,
+		FixPath(L"CustomPixelShader.cso").c_str()));
 }
 
 
@@ -206,47 +159,66 @@ void Game::CreateGeometry()
 	XMFLOAT4 black = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
 	XMFLOAT4 orange = XMFLOAT4(1.0f, 0.54f, 0.0f, 1.0f);
 
-	Vertex triangleVertices[] =
-	{
-		{ XMFLOAT3(+0.0f, +0.2f, +0.0f), red },
-		{ XMFLOAT3(+0.2f, -0.2f, +0.0f), blue },
-		{ XMFLOAT3(-0.2f, -0.2f, +0.0f), green },
-	};
+	XMFLOAT3 normal = XMFLOAT3(0, 0, -1);
+	XMFLOAT2 uv = XMFLOAT2(0, 0);
 
-	unsigned int triangleIndices[] = { 0, 1, 2 };
 
-	Vertex squareVertices[] =
-	{
-		{ XMFLOAT3(-0.9f, -0.0f, +0.0f), red },
-		{ XMFLOAT3(-0.4f, -0.0f, +0.0f), orange},
-		{ XMFLOAT3(-0.4f, -0.5f, +0.0f), blue },
-		{ XMFLOAT3(-0.9f, -0.5f, +0.0f), black },
-	};
+	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cube.obj").c_str()));
+	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cylinder.obj").c_str()));
+	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/sphere.obj").c_str()));
 
-	unsigned int squareIndices[] = { 0, 1, 2, 0, 2, 3 };
 
-	Vertex arrowVerticies[] =
-	{
-		{ XMFLOAT3(+0.25f, +0.25f, +0.0f), black },
-		{ XMFLOAT3(+0.25f, +0.75f, +0.0f), black},
-		{ XMFLOAT3(+0.75f, +0.25f, +0.0f), black },
-		{ XMFLOAT3(+0.25f, +0.5f, +0.0f), black },
-		{ XMFLOAT3(+0.5f, +0.5f, +0.0f), black },
-		{ XMFLOAT3(+0.25f, -0.25f, +0.0f), black },
-	};
 
-	unsigned int arrowIndices[] = { 0, 1, 2, 3, 4, 5 };
+	materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(1, 0, 0, 1), pixelShaders[1], vertexShaders[0]));
+	materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(0, 1, 0, 1), pixelShaders[0], vertexShaders[0]));
+	materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(0, 0, 1, 1), pixelShaders[1], vertexShaders[0]));
 
-	meshes.push_back(std::make_shared<Mesh>(triangleVertices, 3, triangleIndices, 3, device, context));
-	meshes.push_back(std::make_shared<Mesh>(squareVertices,   4, squareIndices,   6, device, context));
-	meshes.push_back(std::make_shared<Mesh>(arrowVerticies,   6, arrowIndices,    6, device, context));
 
 	for (int i = 0; i < entityNum; i++)
 	{
-		entities.push_back(Entity(meshes[i % meshes.size()]));
+		entities.push_back(Entity(meshes[i % meshes.size()], materials[i % materials.size()]));
+
+		entities[i].GetTransform()->MoveAbsolute(0, 0, 3);
 	}
+
+	entities[0].GetTransform()->MoveAbsolute(-3, 0, 0);
+	entities[2].GetTransform()->MoveAbsolute(3, 0, 0);
+
 }
 
+void Game::CameraInput(float deltaTime)
+{
+	Input& input = Input::GetInstance();
+	DirectX::XMFLOAT3 moveVector = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	DirectX::XMFLOAT3 rotateVectors = XMFLOAT3(0.0f, 0.0f, 0.0f);
+
+	//W, S – Forward or backwards(This is relative movement)
+	if (input.KeyDown('W'))
+		moveVector.z = deltaTime;
+
+	else if (input.KeyDown('S'))
+		moveVector.z = -deltaTime;
+
+	//A, D – Strafe left or right(Also relative movement)
+	if (input.KeyDown('A'))
+		moveVector.x = -deltaTime;
+
+	else if (input.KeyDown('D'))
+		moveVector.x = deltaTime;
+
+	/* Q - Move up along the world’s Y axis(Absolute movement)
+	   E - Move down along the world’s Y axis(Absolute movement)*/
+	if (input.KeyDown('Q'))
+		moveVector.y = deltaTime;
+
+	else if (input.KeyDown('E'))
+		moveVector.y = -deltaTime;
+
+	if (input.MouseLeftDown())
+		rotateVectors = XMFLOAT3((float)input.GetMouseYDelta(), (float)input.GetMouseXDelta(), 0.0f);
+
+	cameras[activeCameraIndex]->Update(moveVector, rotateVectors);
+}
 
 // --------------------------------------------------------
 // Handle resizing to match the new window size.
@@ -257,6 +229,9 @@ void Game::OnResize()
 {
 	// Handle base-level DX resize stuff
 	DXCore::OnResize();
+
+	for (std::shared_ptr<Camera> camera : cameras)
+		camera->UpdateProjectionMatrix((float)this->windowWidth / this->windowHeight);
 }
 
 // --------------------------------------------------------
@@ -265,23 +240,8 @@ void Game::OnResize()
 void Game::Update(float deltaTime, float totalTime)
 {
 	ImGuiInitialization(deltaTime, this->windowHeight, this->windowWidth);
-	
-	if (automaticTranslation)
-		entities[0].GetTransform()->SetPosition(sinf(totalTime),0,0);
 
-	if (automaticRotation)
-	{
-		rotationValue += 2.0f * deltaTime;
-		if (rotationValue > 6.28f)
-			rotationValue = 0;
-
-		XMFLOAT3 rot = entities[1].GetTransform()->GetPitchYawRoll();
-		rot.z = rotationValue;
-		entities[1].GetTransform()->SetRotation(rot);
-	}
-
-	if (automaticScaling)
-		entities[2].GetTransform()->SetScale(1, sinf(totalTime), 1);
+	CameraInput(deltaTime);
 
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::GetInstance().KeyDown(VK_ESCAPE))
@@ -304,12 +264,40 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 	input.SetKeyboardCapture(io.WantCaptureKeyboard);
 	input.SetMouseCapture(io.WantCaptureMouse);
 
-	//assignment 4
+	if (ImGui::TreeNode("Controls"))
+	{
+		ImGui::Text("Q/E: Up/Down");
+		ImGui::Text("W/S: Fowards/Backwards");
+		ImGui::Text("A/D: Left/Right");
+		ImGui::TreePop();
+	}
 
-	if (ImGui::Checkbox("Automatic Rotation", &automaticRotation) && automaticRotation)
-		rotationValue = entities[1].GetTransform()->GetPitchYawRoll().z;
+	if (ImGui::TreeNode("Active Camera Selection"))
+	{
+		ImGui::RadioButton("Camera 1", &activeCameraIndex, 0); ImGui::SameLine();
+		ImGui::RadioButton("Camera 2", &activeCameraIndex, 1); ImGui::SameLine();
+		ImGui::RadioButton("Camera 3", &activeCameraIndex, 2);
+		ImGui::TreePop();
+	}
 
-	if (ImGui::TreeNode("Trees"))
+	if (ImGui::TreeNode("Camera Information"))
+	{
+		for (int i = 0; i < cameras.size(); i++)
+		{
+			if (ImGui::TreeNode((void*)(intptr_t)i, "Camera %d", i + 1))
+			{
+				DirectX::XMFLOAT3 pos = cameras[i]->GetTransform()->GetPosition();
+				ImGui::Text("Position: %f %f %f", pos.x, pos.y, pos.z);
+				ImGui::Text("FOV (radiens): %f", cameras[i]->GetFieldOfView());
+				ImGui::Text("Using Perspective View: %d", cameras[i]->UsingPerspectiveProjection());
+				ImGui::TreePop();
+			}
+		}
+	
+		ImGui::TreePop();
+	}
+
+	if (ImGui::TreeNode("Entities"))
 	{
 		for (int i = 1; i < entityNum + 1; i++)
 		{
@@ -319,11 +307,6 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 
 			if (ImGui::TreeNode((void*)(intptr_t)i, "Entity %d", i))
 			{
-				//XMFLOAT3 pos = entities[index].GetTransform()->GetPosition();
-				//XMFLOAT3 rot = entities[index].GetTransform()->GetPitchYawRoll();
-				//XMFLOAT3 scale = entities[index].GetTransform()->GetScale();
-				//XMFLOAT4 colorTint = entities[index].GetColorTint();
-
 				XMFLOAT3 pos = t->GetPosition();
 				XMFLOAT3 rot = t->GetPitchYawRoll();
 				XMFLOAT3 scale = t->GetScale();
@@ -331,25 +314,17 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 
 
 				if (ImGui::DragFloat3("Position", &pos.x, 0.01f, -1.0f, 1.0f))
-				{
-					entities[index].GetTransform()->SetPosition(pos);
-				}
+					t->SetPosition(pos);
 
 				if (ImGui::DragFloat3("Rotation (radians)", &rot.x, 0.01f, 0.0f, 6.28f))
-				{
-					entities[index].GetTransform()->SetRotation(rot);
-				}
+					t->SetRotation(rot);
 
 				if (ImGui::DragFloat3("Scale", &scale.x, 0.01f, 0.0f, 2.0f))
-				{
-					entities[index].GetTransform()->SetScale(scale);
-				}
-
+					t->SetScale(scale);
 				
 				if (ImGui::ColorEdit4("Color Tint", &colorTint.x))
-				{
 					entities[index].SetColorTint(colorTint);
-				}
+
 				ImGui::TreePop();
 			}
 		}
@@ -379,15 +354,10 @@ void Game::Draw(float deltaTime, float totalTime)
 		context->ClearDepthStencilView(depthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
 
-	context->VSSetConstantBuffers(
-		0, // Which slot (register) to bind the buffer to?
-		1, // How many are we activating? Can do multiple at once
-		vsConstantBuffer.GetAddressOf()); // Array of buffers (or the address of one)
-
 	//start drawing
 	for (Entity entity : entities)
 	{
-		entity.Draw(vsConstantBuffer);
+		entity.Draw(cameras[activeCameraIndex]);
 	}
 
 	// Draw ImGui

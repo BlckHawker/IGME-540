@@ -1,10 +1,17 @@
 #include "Transform.h"
 Transform::Transform()
 {
+	right = DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f);
+	up = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
+	forward = DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);
+
 	position = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 	rotation = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 	scale = DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f);
+
+	dirtyDirections = false;
 	dirtyMatrix = false;
+
 	XMStoreFloat4x4(&worldMatrix, DirectX::XMMatrixIdentity());
 	XMStoreFloat4x4(&worldInverseTransposeMatrix, DirectX::XMMatrixIdentity());
 }
@@ -25,6 +32,16 @@ void Transform::UpdateMatrices()
 	dirtyMatrix = false;
 }
 
+void Transform::UpateDirections()
+{
+	DirectX::XMVECTOR quternionRotation = DirectX::XMQuaternionRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
+	XMStoreFloat3(&right, DirectX::XMVector3Rotate(DirectX::XMVectorSet(1, 0, 0, 0), quternionRotation));
+	XMStoreFloat3(&up, DirectX::XMVector3Rotate(DirectX::XMVectorSet(0, 1, 0, 0), quternionRotation));
+	XMStoreFloat3(&forward, DirectX::XMVector3Rotate(DirectX::XMVectorSet(0, 0, 1, 0), quternionRotation));
+	dirtyDirections = false;
+}
+
+
 void Transform::SetPosition(float x, float y, float z)
 {
 	if (position.x == x && position.y == y && position.z == z)
@@ -44,6 +61,8 @@ void Transform::SetRotation(float pitch, float yaw, float roll)
 		return;
 	rotation = DirectX::XMFLOAT3(pitch, yaw, roll);
 	dirtyMatrix = true;
+	dirtyDirections = true;
+
 }
 
 void Transform::SetRotation(DirectX::XMFLOAT3 rotation)
@@ -62,6 +81,27 @@ void Transform::SetScale(float x, float y, float z)
 void Transform::SetScale(DirectX::XMFLOAT3 scale)
 {
 	SetScale(scale.x, scale.y, scale.z);
+}
+
+DirectX::XMFLOAT3 Transform::GetRight()
+{
+	if (dirtyDirections)
+		UpateDirections();
+	return right;
+}
+
+DirectX::XMFLOAT3 Transform::GetUp()
+{
+	if (dirtyDirections)
+		UpateDirections();
+	return up;
+}
+
+DirectX::XMFLOAT3 Transform::GetForward()
+{
+	if (dirtyDirections)
+		UpateDirections();
+	return forward;
 }
 
 DirectX::XMFLOAT3 Transform::GetPosition()
@@ -93,6 +133,25 @@ DirectX::XMFLOAT4X4 Transform::GetWorldInverseTransposeMatrix()
 	return worldInverseTransposeMatrix;
 }
 
+void Transform::MoveRelative(float x, float y, float z)
+{
+	if (x == 0 && y == 0 && z == 0)
+		return;
+
+	//this code is very similar to the demo because I was reffering to it while trying to fix a bug
+	DirectX::XMVECTOR relativeMovement = DirectX::XMVectorSet(x,y,z,0);
+	DirectX::XMVECTOR rot = DirectX::XMQuaternionRotationRollPitchYawFromVector(DirectX::XMLoadFloat3(&rotation));
+	DirectX::XMVECTOR direction = DirectX::XMVector3Rotate(relativeMovement, rot);
+	DirectX::XMVECTOR newPosition = DirectX::XMVectorAdd(XMLoadFloat3(&position), direction);
+	XMStoreFloat3(&position, newPosition);
+	dirtyMatrix = true;
+}
+
+void Transform::MoveRelative(DirectX::XMFLOAT3 offset)
+{
+	MoveRelative(offset.x, offset.y, offset.z);
+}
+
 void Transform::MoveAbsolute(float x, float y, float z)
 {
 	if (x == 0 && y == 0 && z == 0)
@@ -111,6 +170,7 @@ void Transform::Rotate(float pitch, float yaw, float roll)
 	if (pitch == 0 && yaw == 0 && roll == 0)
 		return;
 	rotation = DirectX::XMFLOAT3(rotation.x + pitch, rotation.y + yaw, rotation.z + roll);
+	dirtyDirections = true;
 	dirtyMatrix = true;
 }
 

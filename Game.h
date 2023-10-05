@@ -7,6 +7,9 @@
 #include <memory>
 #include "Mesh.h"
 #include "Entity.h"
+#include "Camera.h"
+#include "SimpleShader.h"
+#include "Material.h"
 
 class Game : public DXCore
 {
@@ -29,35 +32,30 @@ private:
 	// Initialization helper methods - feel free to customize, combine, remove, etc.
 	void LoadShaders(); 
 	void CreateGeometry();
+	void CameraInput(float dt);
 
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
 	//     Component Object Model, which DirectX objects do
 	//  - More info here: https://github.com/Microsoft/DirectXTK/wiki/ComPtr
 
-	//used to edit shader
-	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer;
-
 	// Buffers to hold actual geometry data
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer;
 	
 	// Shaders and shader-related constructs
-	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
-	Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
-	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
+	std::vector<std::shared_ptr<SimpleVertexShader>> vertexShaders;
+	std::vector<std::shared_ptr<SimplePixelShader>> pixelShaders;
 
-	//meshes to draw
 	std::vector<std::shared_ptr<Mesh>> meshes;
 
-	//entity stuff
-	const int entityNum = 5; //the amount of entities that will spawn
-	std::vector<Entity> entities;
-	//value for trasnalting mesh
-	float rotationValue = 0;
-	bool automaticTranslation = true;
-	bool automaticRotation = true;
-	bool automaticScaling = true;
+	std::vector<std::shared_ptr<Material>> materials;
 
+
+	const int entityNum = 3; //the amount of entities that will spawn
+	std::vector<Entity> entities;
+
+	int activeCameraIndex = 1;
+	std::vector< std::shared_ptr<Camera>> cameras;
 };
 

@@ -4,11 +4,12 @@
 #pragma comment(lib, "d3dcompiler.lib")
 #include <d3dcompiler.h>
 
-Entity::Entity(std::shared_ptr<Mesh> mesh)
+Entity::Entity(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material)
 {
 	object = std::make_shared<Transform>();
-	this->mesh = mesh;
 	colorTint = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+	this->mesh = mesh;
+	this->material = material;
 }
 std::shared_ptr<Mesh> Entity::GetMesh()
 {
@@ -20,34 +21,40 @@ std::shared_ptr<Transform> Entity::GetTransform()
 	return object;
 }
 
-void Entity::Draw(Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer)
+void Entity::Draw(std::shared_ptr<Camera> camera)
 {
-	//Set the correct Constant Buffer resource for the Vertex Shader stage (done in assignment 3): 
-	// -Done in game.cpp
+	std::shared_ptr<SimpleVertexShader> vs = material->GetVertexShader();
+	std::shared_ptr<SimplePixelShader> ps = material->GetPixelShader();
+
+	vs->SetMatrix4x4("worldMatrix", object->GetWorldMatrix());
+	vs->SetMatrix4x4("projectionMatrix", camera->GetProjectionMatrix());
+	vs->SetMatrix4x4("viewMatrix", camera->GetViewMatrix());
+	vs->CopyAllBufferData();
+
+	ps->SetFloat4("colorTint", material->GetColorTint());
+	ps->CopyAllBufferData();
+
 	
-	//Collect data for the current entity in a C++ struct (done in assignment 3, but now updated to
-	//hold the world matrix from the entity you're about to draw): 
-	VertexShaderExternalData vsData;
+	material->GetVertexShader()->SetShader();
+	material->GetPixelShader()->SetShader();
 
-	vsData.colorTint = colorTint;
-	vsData.worldMatrix = object->GetWorldMatrix();
 
-	//Map / memcpy / Unmap the Constant Buffer resource(done in assignment 3)
-	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
-	mesh->GetContext()->Map(vsConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
-	memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));
-	mesh->GetContext()->Unmap(vsConstantBuffer.Get(), 0);
-
-	//Set the correct Vertex and Index Buffers(done in assignment 2)
-	// -Done in mesh.cpp
-	//Tell D3D to render using the currently bound resources(done in assignment 2)
-	// -Done in game.cpp
 	mesh->Draw();
 }
 
 DirectX::XMFLOAT4 Entity::GetColorTint()
 {
 	return colorTint;
+}
+
+std::shared_ptr<Material> Entity::GetMaterial()
+{
+	return material;
+}
+
+void Entity::SetMaterial(std::shared_ptr<Material> material)
+{
+	this->material = material;
 }
 
 void Entity::SetColorTint(DirectX::XMFLOAT4 colorTint)
