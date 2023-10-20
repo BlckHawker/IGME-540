@@ -67,6 +67,11 @@ Game::~Game()
 // --------------------------------------------------------
 void Game::Init()
 {
+	directionalLight = {};
+
+	directionalLight.Color = DirectX::XMFLOAT3(1, 0, 1); //magenta
+	directionalLight.Direction = DirectX::XMFLOAT3(1, 0, 0); //goes to the right
+	directionalLight.Intensity = 1;
 	float aspectRatio = (float)this->windowWidth / this->windowHeight;
 
 	for (int i = 0; i < 3; i++)
@@ -168,10 +173,11 @@ void Game::CreateGeometry()
 	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/sphere.obj").c_str()));
 
 
+	
 
-	materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(1, 0, 0, 1), pixelShaders[1], vertexShaders[0]));
-	materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(0, 1, 0, 1), pixelShaders[0], vertexShaders[0]));
-	materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(0, 0, 1, 1), pixelShaders[1], vertexShaders[0]));
+	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(1, 0, 0, 1), pixelShaders[0], vertexShaders[0]));
+	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(0, 1, 0, 1), pixelShaders[0], vertexShaders[0]));
+	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(0, 0, 1, 1), pixelShaders[0], vertexShaders[0]));
 
 
 	for (int i = 0; i < entityNum; i++)
@@ -311,9 +317,15 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 				XMFLOAT3 rot = t->GetPitchYawRoll();
 				XMFLOAT3 scale = t->GetScale();
 				XMFLOAT4 colorTint = e.GetColorTint();
+				float roughness = e.GetMaterial()->GetRoughness();
 
 
-				if (ImGui::DragFloat3("Position", &pos.x, 0.01f, -1.0f, 1.0f))
+				if (ImGui::DragFloat("Roughness", &roughness, 0.01f, 0.0f, 1.0f))
+				{
+					e.GetMaterial()->SetRoughness(roughness);
+				}
+
+				if (ImGui::DragFloat3("Position", &pos.x, 0.01f, -10.0f, 10.0f))
 					t->SetPosition(pos);
 
 				if (ImGui::DragFloat3("Rotation (radians)", &rot.x, 0.01f, 0.0f, 6.28f))
@@ -357,6 +369,8 @@ void Game::Draw(float deltaTime, float totalTime)
 	//start drawing
 	for (Entity entity : entities)
 	{
+		entity.GetMaterial()->GetPixelShader()->SetFloat3("ambient", DirectX::XMFLOAT3(0.4f, 0.6f, 0.75f));
+		entity.GetMaterial()->GetPixelShader()->SetData("directionalLight", &directionalLight, sizeof(Light));
 		entity.Draw(cameras[activeCameraIndex]);
 	}
 

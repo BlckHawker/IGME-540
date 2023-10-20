@@ -29,9 +29,12 @@ void Entity::Draw(std::shared_ptr<Camera> camera)
 	vs->SetMatrix4x4("worldMatrix", object->GetWorldMatrix());
 	vs->SetMatrix4x4("projectionMatrix", camera->GetProjectionMatrix());
 	vs->SetMatrix4x4("viewMatrix", camera->GetViewMatrix());
+	vs->SetMatrix4x4("worldInvTranspose", camera->GetTransform()->GetWorldInverseTransposeMatrix());
 	vs->CopyAllBufferData();
 
 	ps->SetFloat4("colorTint", material->GetColorTint());
+	ps->SetFloat3("cameraPosition", camera->GetTransform()->GetPosition());
+	ps->SetFloat("roughness", material->GetRoughness());
 	ps->CopyAllBufferData();
 
 	

@@ -10,6 +10,7 @@
 #include "Camera.h"
 #include "SimpleShader.h"
 #include "Material.h"
+#include "Lights.h"
 
 class Game : public DXCore
 {
@@ -57,5 +58,7 @@ private:
 
 	int activeCameraIndex = 1;
 	std::vector< std::shared_ptr<Camera>> cameras;
+
+	Light directionalLight;
 };
 
