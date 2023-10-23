@@ -385,9 +385,111 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 	{
 		if (ImGui::TreeNode("Directional Light 1"))
 		{
-			DirectX::XMFLOAT3 color = lights[0].Color;
+			DirectX::XMFLOAT3 direction = lights[0].Direction;
+			float intensity = lights[0].Intensity;
 
-			if()
+
+			if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f))
+			{
+				lights[0].Direction = direction;
+			}
+
+			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
+			{
+				lights[0].Intensity = intensity;
+			}
+
+			ImGui::TreePop();
+
+		}
+
+		if (ImGui::TreeNode("Directional Light 2"))
+		{
+			DirectX::XMFLOAT3 direction = lights[1].Direction;
+			float intensity = lights[1].Intensity;
+
+
+			if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f))
+			{
+				lights[1].Direction = direction;
+			}
+
+			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
+			{
+				lights[1].Intensity = intensity;
+			}
+
+			ImGui::TreePop();
+
+		}
+
+		if (ImGui::TreeNode("Directional Light 3"))
+		{
+			DirectX::XMFLOAT3 direction = lights[2].Direction;
+			float intensity = lights[2].Intensity;
+
+
+			if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f))
+			{
+				lights[2].Direction = direction;
+			}
+
+			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
+			{
+				lights[2].Intensity = intensity;
+			}
+
+			ImGui::TreePop();
+
+		}
+
+		if (ImGui::TreeNode("Point Light 1"))
+		{
+			DirectX::XMFLOAT3 position = lights[3].Position;
+			float range = lights[3].Range;
+			float intensity = lights[3].Intensity;
+
+
+			if (ImGui::DragFloat3("Position", &position.x, 0.01f, -10.0f, 10.0f))
+			{
+				lights[3].Position = position;
+			}
+
+			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
+			{
+				lights[3].Intensity = intensity;
+			}
+
+			if (ImGui::DragFloat("Range", &range, 0.01f, 0.0f, 1.0f))
+			{
+				lights[3].Range = range;
+			}
+
+			ImGui::TreePop();
+
+		}
+
+		if (ImGui::TreeNode("Point Light 2"))
+		{
+			DirectX::XMFLOAT3 position = lights[4].Position;
+			float range = lights[4].Range;
+			float intensity = lights[4].Intensity;
+
+
+			if (ImGui::DragFloat3("Position", &position.x, 0.01f, -10.0f, 10.0f))
+			{
+				lights[4].Position = position;
+			}
+
+			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
+			{
+				lights[4].Intensity = intensity;
+			}
+
+			if (ImGui::DragFloat("Range", &range, 0.01f, 0.0f, 1.0f))
+			{
+				lights[4].Range = range;
+			}
 
 			ImGui::TreePop();
 
