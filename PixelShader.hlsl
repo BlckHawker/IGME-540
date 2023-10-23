@@ -6,7 +6,7 @@ cbuffer ExternalData : register(b0)
     float roughness;
     float3 cameraPosition;
     float3 ambient;
-    Light directionalLight;
+    Light lights[5];  
 }
 
 // --------------------------------------------------------
@@ -26,12 +26,15 @@ float4 main(VertexToPixel input) : SV_TARGET
 	//   of the triangle we're rendering
 	
     float3 smallAmbience = ambient / 5;
-	
-    input.normal = normalize(input.normal);
-    float3 lightDirection = CalculateNormalizedLightDirection(directionalLight.Direction);
-    float diffuseAmount = CalculateDiffuseAmount(input.normal, lightDirection);
+    input.normal = normalize(input.normal);  
     
-    float3 finalColor = (diffuseAmount * float4(directionalLight.Color, 1) * colorTint) + (float4(smallAmbience.xxx, 1) * colorTint);
+    float3 lightSum = float3(0, 0, 0);
     
-    return float4(lightDirection, 1);
+    for (int i = 0; i < 5; i++)
+    {
+        lightSum += GetLightColor(lights[i], input.normal, cameraPosition, input.worldPosition, roughness, colorTint);
+
+    }
+    
+    return float4(lightSum, 1);
 }

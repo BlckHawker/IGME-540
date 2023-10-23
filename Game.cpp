@@ -34,6 +34,44 @@ Game::Game(HINSTANCE hInstance)
 		false,				// Sync the framerate to the monitor refresh? (lock framerate)
 		true)				// Show extra stats (fps) in title bar?
 {
+
+	Light l1 = {};
+	Light l2 = {};
+	Light l3 = {};
+	Light l4 = {};
+	Light l5 = {};
+
+	l1.Color = DirectX::XMFLOAT3(1, 0, 0);
+	l1.Direction = DirectX::XMFLOAT3(-1, 0, 0); //light comes from the right
+	l1.Intensity = 1;
+
+	l2.Color = DirectX::XMFLOAT3(0, 1, 0);
+	l2.Direction = DirectX::XMFLOAT3(0, -1, 0); //light coems from up
+	l2.Intensity = 1;
+
+	l3.Color = DirectX::XMFLOAT3(0, 0, 1);
+	l3.Direction = DirectX::XMFLOAT3(1, 0, 0); //light comes from the left
+	l3.Intensity = 1;
+
+	l4.Type = 1;
+	l4.Color = DirectX::XMFLOAT3(1, 0, 1);
+	l4.Range = 1;
+	l4.Position = DirectX::XMFLOAT3(0, 0, 5); //light comes from the back
+	l4.Intensity = .5;
+
+	l5.Type = 1;
+	l5.Color = DirectX::XMFLOAT3(1, 1, 0);
+	l5.Range = 1;
+	l5.Position = DirectX::XMFLOAT3(0, 0, -1); //light comes from the front
+	l5.Intensity = .5;
+
+	lights.push_back(l1);
+	lights.push_back(l2);
+	lights.push_back(l3);
+	lights.push_back(l4);
+	lights.push_back(l5);
+
+
 #if defined(DEBUG) || defined(_DEBUG)
 	// Do we want a console window?  Probably only in debug mode
 	CreateConsoleWindow(500, 120, 32, 120);
@@ -67,11 +105,9 @@ Game::~Game()
 // --------------------------------------------------------
 void Game::Init()
 {
-	directionalLight = {};
+	
 
-	directionalLight.Color = DirectX::XMFLOAT3(1, 0, 1); //magenta
-	directionalLight.Direction = DirectX::XMFLOAT3(1, 0, 0); //goes to the right
-	directionalLight.Intensity = 1;
+
 	float aspectRatio = (float)this->windowWidth / this->windowHeight;
 
 	for (int i = 0; i < 3; i++)
@@ -178,11 +214,13 @@ void Game::CreateGeometry()
 	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(1, 0, 0, 1), pixelShaders[0], vertexShaders[0]));
 	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(0, 1, 0, 1), pixelShaders[0], vertexShaders[0]));
 	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(0, 0, 1, 1), pixelShaders[0], vertexShaders[0]));
+	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(1, 1, 1, 1), pixelShaders[0], vertexShaders[0]));
+
 
 
 	for (int i = 0; i < entityNum; i++)
 	{
-		entities.push_back(Entity(meshes[i % meshes.size()], materials[i % materials.size()]));
+		entities.push_back(Entity(meshes[i % meshes.size()], materials[3]));
 
 		entities[i].GetTransform()->MoveAbsolute(0, 0, 3);
 	}
@@ -342,6 +380,21 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 		}
 		ImGui::TreePop();
 	}
+
+	if (ImGui::TreeNode("Lights"))
+	{
+		if (ImGui::TreeNode("Directional Light 1"))
+		{
+			DirectX::XMFLOAT3 color = lights[0].Color;
+
+			if()
+
+			ImGui::TreePop();
+
+		}
+		ImGui::TreePop();
+
+	}
 	
 	// Show the demo window
 	//ImGui::ShowDemoWindow();
@@ -369,8 +422,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	//start drawing
 	for (Entity entity : entities)
 	{
-		entity.GetMaterial()->GetPixelShader()->SetFloat3("ambient", DirectX::XMFLOAT3(0.4f, 0.6f, 0.75f));
-		entity.GetMaterial()->GetPixelShader()->SetData("directionalLight", &directionalLight, sizeof(Light));
+		entity.GetMaterial()->GetPixelShader()->SetData("lights", &lights[0], sizeof(Light) * (int)lights.size());
 		entity.Draw(cameras[activeCameraIndex]);
 	}
 

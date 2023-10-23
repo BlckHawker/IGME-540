@@ -34,6 +34,7 @@ struct VertexToPixel
     float4 screenPosition : SV_POSITION; // XYZW position (System Value Position)
     float3 normal : NORMAL;
 	float2 uv : TEXCOORD;
+    float3 worldPosition : POSITION;
 };
 
 #define LIGHT_TYPE_DIRECTIONAL 0
@@ -52,14 +53,6 @@ struct Light
     float3 Padding : PADDING; // Purposefully padding to hit the 16-byte boundary
 };
 
-float3 CalculateNormalizedLightDirection(float3 lightDirection)
-{
-    //Negate the light’s direction, normalize that and store it in another float3 variable
-    //You can’t store it back in the light variable because it’s from a constant buffer
-    
-    return normalize(-lightDirection);
-}
-
 float CalculateDiffuseAmount(float3 normal, float3 directionToLight)
 {
     //Use the dot(v1, v2) function with the surface’s normal and the direction to the light
@@ -67,4 +60,70 @@ float CalculateDiffuseAmount(float3 normal, float3 directionToLight)
     //The dot product can be negative, which will be problematic if we have multiple lights, so use the saturate() function to clamp the result between 0 and 1 before returning
     return saturate(dot(normal, directionToLight));
 }
+
+float CalcuclateSpecularAmount(float3 reflectionVector, float3 viewVector, float roughness)
+{
+    float specExponent = (1.0 - roughness) * MAX_SPECULAR_EXPONENT;
+    
+    if (specExponent < .5)
+        return 0;
+    
+    return pow(saturate(dot(reflectionVector, viewVector)), specExponent);
+}
+
+float CalculatePhongSpecular(float3 cameraPosition, float3 pixelWorldPosition, float3 incomingLightDirection, float3 normal, float roughness)
+{
+    float3 viewVector = normalize(cameraPosition - pixelWorldPosition);
+    float3 reflectionVector = reflect(incomingLightDirection, normal);
+    
+    return CalcuclateSpecularAmount(reflectionVector, viewVector, roughness);
+
+}
+
+float3 CalculateDirectionalLight(Light directionalLight, float3 normal, float3 cameraPosition, float3 pixelWorldPosition, float roughness, float4 colorTint)
+{
+     //Negate the light’s direction, normalize that and store it in another float3 variable
+    float3 lightDirection = normalize(-directionalLight.Direction);
+    float3 directionToCamera = normalize(cameraPosition - pixelWorldPosition);
+    float diffuseAmount = CalculateDiffuseAmount(normal, lightDirection);
+    float phongSpecular = CalculatePhongSpecular(cameraPosition, pixelWorldPosition, -lightDirection, normal, roughness);
+    float3 finalColor = colorTint.xyz * (diffuseAmount + phongSpecular) * directionalLight.Intensity * directionalLight.Color;
+    return finalColor;
+}
+
+float Attenuate(Light light, float3 worldPos)
+{
+    float dist = distance(light.Position, worldPos);
+    float att = saturate(1.0f - (dist * dist / (light.Range * light.Range)));
+    return att * att;
+}
+
+
+float3 CalculatePointLight(Light pointLight, float3 normal, float3 cameraPosition, float3 pixelWorldPosition, float roughness, float4 colorTint)
+{
+    float3 directionToLight = normalize(pointLight.Position - pixelWorldPosition);
+    float3 directiontoCamera = normalize(cameraPosition - pixelWorldPosition);
+    
+    float attenuation = Attenuate(pointLight, pixelWorldPosition);
+    float diffuseAmount = CalculateDiffuseAmount(normal, directionToLight);
+    float phongSpecular = CalculatePhongSpecular(directiontoCamera, pixelWorldPosition, directionToLight, normal, roughness);
+    float3 finalColor = colorTint.xyz * (diffuseAmount + phongSpecular) * pointLight.Intensity * pointLight.Color;
+    return finalColor;
+
+}
+
+float3 GetLightColor(Light light, float3 normal, float3 cameraPosition, float3 worldPosition, float roughness, float4 colorTint)
+{
+    switch (light.Type)
+    {
+        case LIGHT_TYPE_DIRECTIONAL:
+            return CalculateDirectionalLight(light, normal, cameraPosition, worldPosition, roughness, colorTint);
+        
+        default:
+            return CalculatePointLight(light, normal, cameraPosition, worldPosition, roughness, colorTint);
+    }
+}
+
+
+
 #endif

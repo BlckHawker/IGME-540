@@ -58,7 +58,6 @@ private:
 
 	int activeCameraIndex = 1;
 	std::vector< std::shared_ptr<Camera>> cameras;
-
-	Light directionalLight;
+	std::vector<Light> lights;
 };
 
