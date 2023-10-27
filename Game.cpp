@@ -34,6 +34,44 @@ Game::Game(HINSTANCE hInstance)
 		false,				// Sync the framerate to the monitor refresh? (lock framerate)
 		true)				// Show extra stats (fps) in title bar?
 {
+
+	Light l1 = {};
+	Light l2 = {};
+	Light l3 = {};
+	Light l4 = {};
+	Light l5 = {};
+
+	l1.Color = DirectX::XMFLOAT3(1, 0, 0);
+	l1.Direction = DirectX::XMFLOAT3(-1, 0, 0); //light comes from the right
+	l1.Intensity = 1;
+
+	l2.Color = DirectX::XMFLOAT3(0, 1, 0);
+	l2.Direction = DirectX::XMFLOAT3(0, -1, 0); //light coems from up
+	l2.Intensity = 1;
+
+	l3.Color = DirectX::XMFLOAT3(0, 0, 1);
+	l3.Direction = DirectX::XMFLOAT3(1, 0, 0); //light comes from the left
+	l3.Intensity = 1;
+
+	l4.Type = 1;
+	l4.Color = DirectX::XMFLOAT3(1, 0, 1);
+	l4.Range = 1;
+	l4.Position = DirectX::XMFLOAT3(0, 0, 5); //light comes from the back
+	l4.Intensity = .5;
+
+	l5.Type = 1;
+	l5.Color = DirectX::XMFLOAT3(1, 1, 0);
+	l5.Range = 1;
+	l5.Position = DirectX::XMFLOAT3(0, 0, -1); //light comes from the front
+	l5.Intensity = .5;
+
+	lights.push_back(l1);
+	lights.push_back(l2);
+	lights.push_back(l3);
+	lights.push_back(l4);
+	lights.push_back(l5);
+
+
 #if defined(DEBUG) || defined(_DEBUG)
 	// Do we want a console window?  Probably only in debug mode
 	CreateConsoleWindow(500, 120, 32, 120);
@@ -67,6 +105,9 @@ Game::~Game()
 // --------------------------------------------------------
 void Game::Init()
 {
+	
+
+
 	float aspectRatio = (float)this->windowWidth / this->windowHeight;
 
 	for (int i = 0; i < 3; i++)
@@ -168,15 +209,18 @@ void Game::CreateGeometry()
 	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/sphere.obj").c_str()));
 
 
+	
 
-	materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(1, 0, 0, 1), pixelShaders[1], vertexShaders[0]));
-	materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(0, 1, 0, 1), pixelShaders[0], vertexShaders[0]));
-	materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(0, 0, 1, 1), pixelShaders[1], vertexShaders[0]));
+	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(1, 0, 0, 1), pixelShaders[0], vertexShaders[0]));
+	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(0, 1, 0, 1), pixelShaders[0], vertexShaders[0]));
+	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(0, 0, 1, 1), pixelShaders[0], vertexShaders[0]));
+	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(1, 1, 1, 1), pixelShaders[0], vertexShaders[0]));
+
 
 
 	for (int i = 0; i < entityNum; i++)
 	{
-		entities.push_back(Entity(meshes[i % meshes.size()], materials[i % materials.size()]));
+		entities.push_back(Entity(meshes[i % meshes.size()], materials[3]));
 
 		entities[i].GetTransform()->MoveAbsolute(0, 0, 3);
 	}
@@ -311,9 +355,15 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 				XMFLOAT3 rot = t->GetPitchYawRoll();
 				XMFLOAT3 scale = t->GetScale();
 				XMFLOAT4 colorTint = e.GetColorTint();
+				float roughness = e.GetMaterial()->GetRoughness();
 
 
-				if (ImGui::DragFloat3("Position", &pos.x, 0.01f, -1.0f, 1.0f))
+				if (ImGui::DragFloat("Roughness", &roughness, 0.01f, 0.0f, 1.0f))
+				{
+					e.GetMaterial()->SetRoughness(roughness);
+				}
+
+				if (ImGui::DragFloat3("Position", &pos.x, 0.01f, -10.0f, 10.0f))
 					t->SetPosition(pos);
 
 				if (ImGui::DragFloat3("Rotation (radians)", &rot.x, 0.01f, 0.0f, 6.28f))
@@ -329,6 +379,123 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 			}
 		}
 		ImGui::TreePop();
+	}
+
+	if (ImGui::TreeNode("Lights"))
+	{
+		if (ImGui::TreeNode("Directional Light 1"))
+		{
+			DirectX::XMFLOAT3 direction = lights[0].Direction;
+			float intensity = lights[0].Intensity;
+
+
+			if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f))
+			{
+				lights[0].Direction = direction;
+			}
+
+			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
+			{
+				lights[0].Intensity = intensity;
+			}
+
+			ImGui::TreePop();
+
+		}
+
+		if (ImGui::TreeNode("Directional Light 2"))
+		{
+			DirectX::XMFLOAT3 direction = lights[1].Direction;
+			float intensity = lights[1].Intensity;
+
+
+			if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f))
+			{
+				lights[1].Direction = direction;
+			}
+
+			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
+			{
+				lights[1].Intensity = intensity;
+			}
+
+			ImGui::TreePop();
+
+		}
+
+		if (ImGui::TreeNode("Directional Light 3"))
+		{
+			DirectX::XMFLOAT3 direction = lights[2].Direction;
+			float intensity = lights[2].Intensity;
+
+
+			if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f))
+			{
+				lights[2].Direction = direction;
+			}
+
+			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
+			{
+				lights[2].Intensity = intensity;
+			}
+
+			ImGui::TreePop();
+
+		}
+
+		if (ImGui::TreeNode("Point Light 1"))
+		{
+			DirectX::XMFLOAT3 position = lights[3].Position;
+			float range = lights[3].Range;
+			float intensity = lights[3].Intensity;
+
+
+			if (ImGui::DragFloat3("Position", &position.x, 0.01f, -10.0f, 10.0f))
+			{
+				lights[3].Position = position;
+			}
+
+			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
+			{
+				lights[3].Intensity = intensity;
+			}
+
+			if (ImGui::DragFloat("Range", &range, 0.01f, 0.0f, 1.0f))
+			{
+				lights[3].Range = range;
+			}
+
+			ImGui::TreePop();
+
+		}
+
+		if (ImGui::TreeNode("Point Light 2"))
+		{
+			DirectX::XMFLOAT3 position = lights[4].Position;
+			float range = lights[4].Range;
+			float intensity = lights[4].Intensity;
+
+
+			if (ImGui::DragFloat3("Position", &position.x, 0.01f, -10.0f, 10.0f))
+			{
+				lights[4].Position = position;
+			}
+
+			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
+			{
+				lights[4].Intensity = intensity;
+			}
+
+			if (ImGui::DragFloat("Range", &range, 0.01f, 0.0f, 1.0f))
+			{
+				lights[4].Range = range;
+			}
+
+			ImGui::TreePop();
+
+		}
+		ImGui::TreePop();
+
 	}
 	
 	// Show the demo window
@@ -357,6 +524,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	//start drawing
 	for (Entity entity : entities)
 	{
+		entity.GetMaterial()->GetPixelShader()->SetData("lights", &lights[0], sizeof(Light) * (int)lights.size());
 		entity.Draw(cameras[activeCameraIndex]);
 	}
 
