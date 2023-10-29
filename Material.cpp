@@ -50,7 +50,28 @@ void Material::SetVertexShader(std::shared_ptr<SimpleVertexShader> vertexShader)
 	this->vertexShader = vertexShader;
 }
 
+void Material::AddTextureSRV(std::string name, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureSRV)
+{
+	textureSRVs.insert({ name, textureSRV });
+}
+
+void Material::AddSampler(std::string name, Microsoft::WRL::ComPtr<ID3D11SamplerState> sampler)
+{
+	samplers.insert({ name, sampler });
+}
+
 float Material::Clamp(float val)
 {
 	return val < 0 ? 0 : val > 1 ? 1 : val;
+}
+
+void Material::SetLights(std::string name, const void* data, unsigned int size)
+{
+	pixelShader->SetData(name, data, size);
+}
+
+void Material::SetTextureData()
+{
+	for (auto& t : textureSRVs) { pixelShader->SetShaderResourceView(t.first.c_str(), t.second); }
+	for (auto& s : samplers) { pixelShader->SetSamplerState(s.first.c_str(), s.second.Get()); }
 }

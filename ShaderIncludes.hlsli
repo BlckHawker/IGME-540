@@ -80,14 +80,14 @@ float CalculatePhongSpecular(float3 cameraPosition, float3 pixelWorldPosition, f
 
 }
 
-float3 CalculateDirectionalLight(Light directionalLight, float3 normal, float3 cameraPosition, float3 pixelWorldPosition, float roughness, float4 colorTint)
+float3 CalculateDirectionalLight(Light directionalLight, float3 normal, float3 cameraPosition, float3 pixelWorldPosition, float roughness, float4 surfaceColor)
 {
      //Negate the light’s direction, normalize that and store it in another float3 variable
     float3 lightDirection = normalize(-directionalLight.Direction);
     float3 directionToCamera = normalize(cameraPosition - pixelWorldPosition);
     float diffuseAmount = CalculateDiffuseAmount(normal, lightDirection);
     float phongSpecular = CalculatePhongSpecular(cameraPosition, pixelWorldPosition, -lightDirection, normal, roughness);
-    float3 finalColor = colorTint.xyz * (diffuseAmount + phongSpecular) * directionalLight.Intensity * directionalLight.Color;
+    float3 finalColor = surfaceColor.xyz * (diffuseAmount + phongSpecular) * directionalLight.Intensity * directionalLight.Color;
     return finalColor;
 }
 
@@ -99,7 +99,7 @@ float Attenuate(Light light, float3 worldPos)
 }
 
 
-float3 CalculatePointLight(Light pointLight, float3 normal, float3 cameraPosition, float3 pixelWorldPosition, float roughness, float4 colorTint)
+float3 CalculatePointLight(Light pointLight, float3 normal, float3 cameraPosition, float3 pixelWorldPosition, float roughness, float4 surfaceColor)
 {
     float3 directionToLight = normalize(pointLight.Position - pixelWorldPosition);
     float3 directiontoCamera = normalize(cameraPosition - pixelWorldPosition);
@@ -107,20 +107,20 @@ float3 CalculatePointLight(Light pointLight, float3 normal, float3 cameraPositio
     float attenuation = Attenuate(pointLight, pixelWorldPosition);
     float diffuseAmount = CalculateDiffuseAmount(normal, directionToLight);
     float phongSpecular = CalculatePhongSpecular(directiontoCamera, pixelWorldPosition, directionToLight, normal, roughness);
-    float3 finalColor = colorTint.xyz * (diffuseAmount + phongSpecular) * pointLight.Intensity * pointLight.Color;
+    float3 finalColor = surfaceColor.xyz * (diffuseAmount + phongSpecular) * pointLight.Intensity * pointLight.Color;
     return finalColor;
 
 }
 
-float3 GetLightColor(Light light, float3 normal, float3 cameraPosition, float3 worldPosition, float roughness, float4 colorTint)
+float3 GetLightColor(Light light, float3 normal, float3 cameraPosition, float3 worldPosition, float roughness, float4 surfaceColor)
 {
     switch (light.Type)
     {
         case LIGHT_TYPE_DIRECTIONAL:
-            return CalculateDirectionalLight(light, normal, cameraPosition, worldPosition, roughness, colorTint);
+            return CalculateDirectionalLight(light, normal, cameraPosition, worldPosition, roughness, surfaceColor);
         
         default:
-            return CalculatePointLight(light, normal, cameraPosition, worldPosition, roughness, colorTint);
+            return CalculatePointLight(light, normal, cameraPosition, worldPosition, roughness, surfaceColor);
     }
 }
 

@@ -8,9 +8,8 @@ bool ISimpleShader::ReportWarnings = false;
 // of the following lines somewhere in your program, 
 // preferably before loading/using any shaders.
 // 
-// ISimpleShader::ReportErrors = true;
-// ISimpleShader::ReportWarnings = true;
-
+//bool isimpleshader::reporterrors = true;
+//bool isimpleshader::reportwarnings = true;
 
 ///////////////////////////////////////////////////////////////////////////////
 // ------ BASE SIMPLE SHADER --------------------------------------------------
