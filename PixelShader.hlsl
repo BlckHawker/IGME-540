@@ -7,7 +7,12 @@ cbuffer ExternalData : register(b0)
     float3 cameraPosition;
     float3 ambient;
     Light lights[5];  
+    float2 uvOffset;
 }
+
+Texture2D SurfaceTexture : register(t0); // "t" registers for textures
+Texture2D SpecularMap : register(t1);
+SamplerState BasicSampler : register(s0); // "s" registers for samplers
 
 // --------------------------------------------------------
 // The entry point (main method) for our pixel shader
@@ -25,6 +30,10 @@ float4 main(VertexToPixel input) : SV_TARGET
 	//   interpolated for each pixel between the corresponding vertices 
 	//   of the triangle we're rendering
 	
+    // Adjust the variables below as necessary to work with your own code
+    float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb * colorTint.rgb;
+    float specularScale = SpecularMap.Sample(BasicSampler, input.uv).b;
+    
     float3 smallAmbience = ambient / 5;
     input.normal = normalize(input.normal);  
     
@@ -32,7 +41,7 @@ float4 main(VertexToPixel input) : SV_TARGET
     
     for (int i = 0; i < 5; i++)
     {
-        lightSum += GetLightColor(lights[i], input.normal, cameraPosition, input.worldPosition, roughness, colorTint);
+        lightSum += GetLightColor(lights[i], input.normal, cameraPosition, input.worldPosition, roughness, float4(surfaceColor, 1), specularScale);
 
     }
     

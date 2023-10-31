@@ -3,14 +3,22 @@
 #include "DXCore.h"
 #include <DirectXMath.h>
 #include <wrl/client.h> // Used for ComPtr - a smart pointer for COM objects
-#include <vector>
-#include <memory>
-#include "Mesh.h"
 #include "Entity.h"
 #include "Camera.h"
 #include "SimpleShader.h"
 #include "Material.h"
 #include "Lights.h"
+#include "WICTextureLoader.h"
+#include "Vertex.h"
+#include "Input.h"
+#include "PathHelpers.h"
+#include "Mesh.h"
+#include "ImGui/imgui.h"
+#include "ImGui/imgui_impl_dx11.h"
+#include "ImGui/imgui_impl_win32.h"
+
+#include <vector>
+#include <memory>
 
 class Game : public DXCore
 {
@@ -29,11 +37,13 @@ public:
 private:
 	//helper method for igmu
 	void ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsigned int windowWidth);
-
+	void CreateMaterials();
 	// Initialization helper methods - feel free to customize, combine, remove, etc.
 	void LoadShaders(); 
-	void CreateGeometry();
+	void CreateEntites();
 	void CameraInput(float dt);
+	void LoadAssets();
+	void CreateLights();
 
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
@@ -59,5 +69,9 @@ private:
 	int activeCameraIndex = 1;
 	std::vector< std::shared_ptr<Camera>> cameras;
 	std::vector<Light> lights;
+
+	
+	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> shaderResourceViewVectors;
+	std::vector<Microsoft::WRL::ComPtr<ID3D11SamplerState>> samplerStateVectors;
 };
 

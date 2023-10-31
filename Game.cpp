@@ -1,14 +1,4 @@
 #include "Game.h"
-#include "Vertex.h"
-#include "Input.h"
-#include "PathHelpers.h"
-#include "Mesh.h"
-#include <memory>
-#include <vector>
-
-#include "ImGui/imgui.h"
-#include "ImGui/imgui_impl_dx11.h"
-#include "ImGui/imgui_impl_win32.h"
 
 // Needed for a helper function to load pre-compiled shader files
 #pragma comment(lib, "d3dcompiler.lib")
@@ -34,43 +24,6 @@ Game::Game(HINSTANCE hInstance)
 		false,				// Sync the framerate to the monitor refresh? (lock framerate)
 		true)				// Show extra stats (fps) in title bar?
 {
-
-	Light l1 = {};
-	Light l2 = {};
-	Light l3 = {};
-	Light l4 = {};
-	Light l5 = {};
-
-	l1.Color = DirectX::XMFLOAT3(1, 0, 0);
-	l1.Direction = DirectX::XMFLOAT3(-1, 0, 0); //light comes from the right
-	l1.Intensity = 1;
-
-	l2.Color = DirectX::XMFLOAT3(0, 1, 0);
-	l2.Direction = DirectX::XMFLOAT3(0, -1, 0); //light coems from up
-	l2.Intensity = 1;
-
-	l3.Color = DirectX::XMFLOAT3(0, 0, 1);
-	l3.Direction = DirectX::XMFLOAT3(1, 0, 0); //light comes from the left
-	l3.Intensity = 1;
-
-	l4.Type = 1;
-	l4.Color = DirectX::XMFLOAT3(1, 0, 1);
-	l4.Range = 1;
-	l4.Position = DirectX::XMFLOAT3(0, 0, 5); //light comes from the back
-	l4.Intensity = .5;
-
-	l5.Type = 1;
-	l5.Color = DirectX::XMFLOAT3(1, 1, 0);
-	l5.Range = 1;
-	l5.Position = DirectX::XMFLOAT3(0, 0, -1); //light comes from the front
-	l5.Intensity = .5;
-
-	lights.push_back(l1);
-	lights.push_back(l2);
-	lights.push_back(l3);
-	lights.push_back(l4);
-	lights.push_back(l5);
-
 
 #if defined(DEBUG) || defined(_DEBUG)
 	// Do we want a console window?  Probably only in debug mode
@@ -105,9 +58,6 @@ Game::~Game()
 // --------------------------------------------------------
 void Game::Init()
 {
-	
-
-
 	float aspectRatio = (float)this->windowWidth / this->windowHeight;
 
 	for (int i = 0; i < 3; i++)
@@ -158,8 +108,7 @@ void Game::Init()
 	// geometry to draw and some simple camera matrices.
 	//  - You'll be expanding and/or replacing these later
 	LoadShaders();
-	CreateGeometry();
-	
+	LoadAssets();
 
 	// Tell the input assembler (IA) stage of the pipeline what kind of
 	// geometric primitives (points, lines or triangles) we want to draw.  
@@ -167,6 +116,136 @@ void Game::Init()
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 }
+
+void Game::LoadAssets()
+{
+	//Load the meshes
+	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cube.obj").c_str()));
+	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cylinder.obj").c_str()));
+	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/sphere.obj").c_str()));
+
+	//Load the textures
+
+	//sampler states
+	D3D11_SAMPLER_DESC samplerData = {};
+	samplerData.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerData.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerData.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerData.Filter = D3D11_FILTER_ANISOTROPIC;
+	samplerData.MaxAnisotropy = 16;
+	samplerData.MaxLOD = D3D11_FLOAT32_MAX;
+
+	
+
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
+	HRESULT a = device->CreateSamplerState(&samplerData, samplerState.GetAddressOf());
+
+	samplerStateVectors.push_back(samplerState);
+
+	//Shader Resource View
+
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> brokenTilesSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> brokenTilesSpecularSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rustyMetalSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rustyMetalSpecularSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> tileSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> tileSpecularSRV;
+
+	HRESULT b = CreateWICTextureFromFile(device.Get(),
+	context.Get(),
+	FixPath(L"../../Assets/Specular Maps/brokentiles.png").c_str(),
+	0,
+	brokenTilesSRV.GetAddressOf());
+
+	HRESULT c = CreateWICTextureFromFile(device.Get(),
+	context.Get(),
+	FixPath(L"../../Assets/Specular Maps/brokentiles_specular.png").c_str(),
+	0,
+	brokenTilesSpecularSRV.GetAddressOf());
+
+
+	HRESULT d = CreateWICTextureFromFile(device.Get(),
+	context.Get(),
+	FixPath(L"../../Assets/Specular Maps/rustymetal.png").c_str(),
+	0,
+	rustyMetalSRV.GetAddressOf());
+
+	HRESULT e = CreateWICTextureFromFile(device.Get(),
+	context.Get(),
+	FixPath(L"../../Assets/Specular Maps/rustymetal_specular.png").c_str(),
+	0,
+	rustyMetalSpecularSRV.GetAddressOf());
+
+	HRESULT f = CreateWICTextureFromFile(device.Get(),
+	context.Get(),
+	FixPath(L"../../Assets/Specular Maps/tiles.png").c_str(),
+	0,
+	tileSRV.GetAddressOf());
+
+	HRESULT g = CreateWICTextureFromFile(device.Get(),
+	context.Get(),
+	FixPath(L"../../Assets/Specular Maps/tiles_specular.png").c_str(),
+	0,
+	tileSpecularSRV.GetAddressOf());
+
+	shaderResourceViewVectors.push_back(brokenTilesSRV);
+	shaderResourceViewVectors.push_back(brokenTilesSpecularSRV);
+	shaderResourceViewVectors.push_back(rustyMetalSRV);
+	shaderResourceViewVectors.push_back(rustyMetalSpecularSRV);
+	shaderResourceViewVectors.push_back(tileSRV);
+	shaderResourceViewVectors.push_back(tileSpecularSRV);
+
+	//Create Materials
+	CreateMaterials();
+	
+	//add texutres to materials
+	for (std::shared_ptr<Material> mat : materials)
+		mat->AddSampler("BasicSampler", samplerState);
+
+	materials[0]->AddTextureSRV("SurfaceTexture", brokenTilesSRV);
+	materials[0]->AddTextureSRV("SpecularMap", brokenTilesSpecularSRV);
+
+	materials[1]->AddTextureSRV("SurfaceTexture", rustyMetalSRV);
+	materials[1]->AddTextureSRV("SpecularMap", rustyMetalSpecularSRV);
+
+	materials[2]->AddTextureSRV("SurfaceTexture", tileSRV);
+	materials[2]->AddTextureSRV("SpecularMap", tileSpecularSRV);
+
+	CreateEntites();
+
+	CreateLights();
+}
+
+void Game::CreateLights()
+{
+	lights.push_back({});
+	lights.push_back({});
+	lights.push_back({});
+	lights.push_back({});
+	lights.push_back({});
+
+
+	lights[0].Color = DirectX::XMFLOAT3(1, 1, 1);
+	lights[0].Direction = DirectX::XMFLOAT3(-1, 0, 0); //light comes from the right
+	lights[0].Intensity = 1;
+
+	lights[1].Color = DirectX::XMFLOAT3(1, 1, 1);
+	lights[1].Direction = DirectX::XMFLOAT3(0, -1, 0); //light coems from up
+	lights[1].Intensity = 1;
+
+	lights[2].Color = DirectX::XMFLOAT3(1, 1, 1);
+	lights[2].Direction = DirectX::XMFLOAT3(1, 0, 0); //light comes from the left
+	lights[2].Intensity = 1;
+
+	lights[3].Color = DirectX::XMFLOAT3(1, 1, 1);
+	lights[3].Direction = DirectX::XMFLOAT3(0, 0, 1); //light comes from the front
+	lights[3].Intensity = 1;
+
+	lights[4].Color = DirectX::XMFLOAT3(1, 1, 1);
+	lights[4].Direction = DirectX::XMFLOAT3(0, 0, -1); //light comes from the back
+	lights[4].Intensity = 1;
+}
+
 
 // --------------------------------------------------------
 // Loads shaders from compiled shader object (.cso) files
@@ -186,41 +265,24 @@ void Game::LoadShaders()
 		FixPath(L"CustomPixelShader.cso").c_str()));
 }
 
+void Game::CreateMaterials()
+{
+	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(1, 1, 1, 1), pixelShaders[0], vertexShaders[0]));
+	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(1, 1, 1, 1), pixelShaders[0], vertexShaders[0]));
+	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(1, 1, 1, 1), pixelShaders[0], vertexShaders[0]));
+}
+
 
 
 // --------------------------------------------------------
 // Creates the geometry we're going to draw - a single triangle for now
 // --------------------------------------------------------
-void Game::CreateGeometry()
+void Game::CreateEntites()
 {
-	XMFLOAT4 red = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
-	XMFLOAT4 yellow = XMFLOAT4(1.0f, 0.84f, 0.0f, 1.0f);
-	XMFLOAT4 green = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
-	XMFLOAT4 blue = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
-	XMFLOAT4 black = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-	XMFLOAT4 orange = XMFLOAT4(1.0f, 0.54f, 0.0f, 1.0f);
-
-	XMFLOAT3 normal = XMFLOAT3(0, 0, -1);
-	XMFLOAT2 uv = XMFLOAT2(0, 0);
-
-
-	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cube.obj").c_str()));
-	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cylinder.obj").c_str()));
-	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/sphere.obj").c_str()));
-
-
-	
-
-	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(1, 0, 0, 1), pixelShaders[0], vertexShaders[0]));
-	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(0, 1, 0, 1), pixelShaders[0], vertexShaders[0]));
-	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(0, 0, 1, 1), pixelShaders[0], vertexShaders[0]));
-	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(1, 1, 1, 1), pixelShaders[0], vertexShaders[0]));
-
-
 
 	for (int i = 0; i < entityNum; i++)
 	{
-		entities.push_back(Entity(meshes[i % meshes.size()], materials[3]));
+		entities.push_back(Entity(meshes[i % meshes.size()], materials[i % materials.size()]));
 
 		entities[i].GetTransform()->MoveAbsolute(0, 0, 3);
 	}
@@ -443,16 +505,15 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 
 		}
 
-		if (ImGui::TreeNode("Point Light 1"))
+		if (ImGui::TreeNode("Directional Light 4"))
 		{
-			DirectX::XMFLOAT3 position = lights[3].Position;
-			float range = lights[3].Range;
+			DirectX::XMFLOAT3 direction = lights[3].Direction;
 			float intensity = lights[3].Intensity;
 
 
-			if (ImGui::DragFloat3("Position", &position.x, 0.01f, -10.0f, 10.0f))
+			if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f))
 			{
-				lights[3].Position = position;
+				lights[3].Direction = direction;
 			}
 
 			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
@@ -460,25 +521,19 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 				lights[3].Intensity = intensity;
 			}
 
-			if (ImGui::DragFloat("Range", &range, 0.01f, 0.0f, 1.0f))
-			{
-				lights[3].Range = range;
-			}
-
 			ImGui::TreePop();
 
 		}
 
-		if (ImGui::TreeNode("Point Light 2"))
+		if (ImGui::TreeNode("Directional Light 5"))
 		{
-			DirectX::XMFLOAT3 position = lights[4].Position;
-			float range = lights[4].Range;
+			DirectX::XMFLOAT3 direction = lights[4].Direction;
 			float intensity = lights[4].Intensity;
 
 
-			if (ImGui::DragFloat3("Position", &position.x, 0.01f, -10.0f, 10.0f))
+			if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f))
 			{
-				lights[4].Position = position;
+				lights[4].Direction = direction;
 			}
 
 			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
@@ -486,14 +541,10 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 				lights[4].Intensity = intensity;
 			}
 
-			if (ImGui::DragFloat("Range", &range, 0.01f, 0.0f, 1.0f))
-			{
-				lights[4].Range = range;
-			}
-
 			ImGui::TreePop();
 
 		}
+	
 		ImGui::TreePop();
 
 	}
@@ -524,7 +575,8 @@ void Game::Draw(float deltaTime, float totalTime)
 	//start drawing
 	for (Entity entity : entities)
 	{
-		entity.GetMaterial()->GetPixelShader()->SetData("lights", &lights[0], sizeof(Light) * (int)lights.size());
+		entity.GetMaterial()->SetLights("lights", &lights[0], sizeof(Light) * (int)lights.size());
+		entity.GetMaterial()->SetTextureData();
 		entity.Draw(cameras[activeCameraIndex]);
 	}
 
