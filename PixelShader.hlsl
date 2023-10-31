@@ -32,8 +32,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 	
     // Adjust the variables below as necessary to work with your own code
     float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb * colorTint.rgb;
-    
-    float recalculatedRoughness = clamp(roughness * SpecularMap.Sample(BasicSampler, input.uv).b, 0, 1);
+    float specularScale = SpecularMap.Sample(BasicSampler, input.uv).b;
     
     float3 smallAmbience = ambient / 5;
     input.normal = normalize(input.normal);  
@@ -42,7 +41,7 @@ float4 main(VertexToPixel input) : SV_TARGET
     
     for (int i = 0; i < 5; i++)
     {
-        lightSum += GetLightColor(lights[i], input.normal, cameraPosition, input.worldPosition, recalculatedRoughness, float4(surfaceColor, 1));
+        lightSum += GetLightColor(lights[i], input.normal, cameraPosition, input.worldPosition, roughness, float4(surfaceColor, 1), specularScale);
 
     }
     

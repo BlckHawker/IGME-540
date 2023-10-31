@@ -33,7 +33,7 @@ struct VertexToPixel
 	//  v    v                v
     float4 screenPosition : SV_POSITION; // XYZW position (System Value Position)
     float3 normal : NORMAL;
-	float2 uv : TEXCOORD;
+    float2 uv : TEXCOORD;
     float3 worldPosition : POSITION;
 };
 
@@ -44,7 +44,7 @@ struct VertexToPixel
 struct Light
 {
     int Type : TYPE; // Which kind of light? 0, 1 or 2 (see above)
-    float3 Direction: DIRECTION; // Directional and Spot lights need a direction
+    float3 Direction : DIRECTION; // Directional and Spot lights need a direction
     float Range : RANGE; // Point and Spot lights have a max range for attenuation
     float3 Position : POSITION; // Point and Spot lights have a position in space
     float Intensity : INTENSITY; // All lights need an intensity
@@ -80,13 +80,13 @@ float CalculatePhongSpecular(float3 cameraPosition, float3 pixelWorldPosition, f
 
 }
 
-float3 CalculateDirectionalLight(Light directionalLight, float3 normal, float3 cameraPosition, float3 pixelWorldPosition, float roughness, float4 surfaceColor)
+float3 CalculateDirectionalLight(Light directionalLight, float3 normal, float3 cameraPosition, float3 pixelWorldPosition, float roughness, float4 surfaceColor, float specularScale)
 {
      //Negate the light’s direction, normalize that and store it in another float3 variable
     float3 lightDirection = normalize(-directionalLight.Direction);
     float3 directionToCamera = normalize(cameraPosition - pixelWorldPosition);
     float diffuseAmount = CalculateDiffuseAmount(normal, lightDirection);
-    float phongSpecular = CalculatePhongSpecular(cameraPosition, pixelWorldPosition, -lightDirection, normal, roughness);
+    float phongSpecular = CalculatePhongSpecular(cameraPosition, pixelWorldPosition, -lightDirection, normal, roughness) * specularScale;
     float3 finalColor = surfaceColor.xyz * (diffuseAmount + phongSpecular) * directionalLight.Intensity * directionalLight.Color;
     return finalColor;
 }
@@ -99,28 +99,28 @@ float Attenuate(Light light, float3 worldPos)
 }
 
 
-float3 CalculatePointLight(Light pointLight, float3 normal, float3 cameraPosition, float3 pixelWorldPosition, float roughness, float4 surfaceColor)
+float3 CalculatePointLight(Light pointLight, float3 normal, float3 cameraPosition, float3 pixelWorldPosition, float roughness, float4 surfaceColor, float specularScale)
 {
     float3 directionToLight = normalize(pointLight.Position - pixelWorldPosition);
     float3 directiontoCamera = normalize(cameraPosition - pixelWorldPosition);
     
     float attenuation = Attenuate(pointLight, pixelWorldPosition);
     float diffuseAmount = CalculateDiffuseAmount(normal, directionToLight);
-    float phongSpecular = CalculatePhongSpecular(directiontoCamera, pixelWorldPosition, directionToLight, normal, roughness);
+    float phongSpecular = CalculatePhongSpecular(directiontoCamera, pixelWorldPosition, directionToLight, normal, roughness) * specularScale;
     float3 finalColor = surfaceColor.xyz * (diffuseAmount + phongSpecular) * pointLight.Intensity * pointLight.Color;
     return finalColor;
 
 }
 
-float3 GetLightColor(Light light, float3 normal, float3 cameraPosition, float3 worldPosition, float roughness, float4 surfaceColor)
+float3 GetLightColor(Light light, float3 normal, float3 cameraPosition, float3 worldPosition, float roughness, float4 surfaceColor, float specularScale)
 {
     switch (light.Type)
     {
         case LIGHT_TYPE_DIRECTIONAL:
-            return CalculateDirectionalLight(light, normal, cameraPosition, worldPosition, roughness, surfaceColor);
+            return CalculateDirectionalLight(light, normal, cameraPosition, worldPosition, roughness, surfaceColor, specularScale);
         
         default:
-            return CalculatePointLight(light, normal, cameraPosition, worldPosition, roughness, surfaceColor);
+            return CalculatePointLight(light, normal, cameraPosition, worldPosition, roughness, surfaceColor, specularScale);
     }
 }
 
