@@ -65,10 +65,12 @@ float CalcuclateSpecularAmount(float3 reflectionVector, float3 viewVector, float
 {
     float specExponent = (1.0 - roughness) * MAX_SPECULAR_EXPONENT;
     
-    if (specExponent < .5)
-        return 0;
+    float spec = 0;
     
-    return pow(saturate(dot(reflectionVector, viewVector)), specExponent);
+    if (specExponent > .5)
+        spec = pow(saturate(dot(reflectionVector, viewVector)), specExponent);
+    
+    return spec;
 }
 
 float CalculatePhongSpecular(float3 cameraPosition, float3 pixelWorldPosition, float3 incomingLightDirection, float3 normal, float roughness)
@@ -107,7 +109,7 @@ float3 CalculatePointLight(Light pointLight, float3 normal, float3 cameraPositio
     float attenuation = Attenuate(pointLight, pixelWorldPosition);
     float diffuseAmount = CalculateDiffuseAmount(normal, directionToLight);
     float phongSpecular = CalculatePhongSpecular(directiontoCamera, pixelWorldPosition, directionToLight, normal, roughness) * specularScale;
-    float3 finalColor = surfaceColor.xyz * (diffuseAmount + phongSpecular) * pointLight.Intensity * pointLight.Color;
+    float3 finalColor = surfaceColor.xyz * (diffuseAmount + phongSpecular) * pointLight.Intensity * pointLight.Color * attenuation;
     return finalColor;
 
 }
