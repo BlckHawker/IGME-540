@@ -138,40 +138,114 @@ void Game::LoadAssets()
 	
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
-	HRESULT a = device->CreateSamplerState(&samplerData, samplerState.GetAddressOf());
+	HRESULT a1 = device->CreateSamplerState(&samplerData, samplerState.GetAddressOf());
+
+	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> srvSufaceTexuturesVector;
+	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> srvSpecularMapVector;
+	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> srvNormalMapVector;
 
 	//Shader Resource View
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> flatSpecularSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockSpecularSRV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockNormalSRV;
+
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobblestoneSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobblestoneSpecularSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobblestoneNormalSRV;
+
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cushionSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cushionSpecularSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cushionNormalSRV;
+
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> flatNormalSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> flatSpecularSRV;
 
 
 
-	HRESULT b = CreateWICTextureFromFile(device.Get(),
+	HRESULT b1 = CreateWICTextureFromFile(device.Get(),
 		context.Get(),
 		FixPath(L"../../Assets/Textures/Base Maps/rock.png").c_str(),
 		0,
 		rockSRV.GetAddressOf());
 
-	HRESULT c = CreateWICTextureFromFile(device.Get(),
+	HRESULT b2 = CreateWICTextureFromFile(device.Get(),
 		context.Get(),
-		FixPath(L"../../Assets/Textures/Specular Maps/flat.png").c_str(),
+		FixPath(L"../../Assets/Textures/Specular Maps/rock.png").c_str(),
 		0,
-		flatSpecularSRV.GetAddressOf());
+		rockSpecularSRV.GetAddressOf());
 
-	HRESULT d = CreateWICTextureFromFile(device.Get(),
+	HRESULT b3 = CreateWICTextureFromFile(device.Get(),
 		context.Get(),
 		FixPath(L"../../Assets/Textures/Normal Maps/rock.png").c_str(),
 		0,
 		rockNormalSRV.GetAddressOf());
 
-	HRESULT e = CreateWICTextureFromFile(device.Get(),
+
+	HRESULT b4 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Base Maps/cobblestone.png").c_str(),
+		0,
+		cobblestoneSRV.GetAddressOf());
+
+	HRESULT b5 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Specular Maps/cobblestone.png").c_str(),
+		0,
+		cobblestoneSpecularSRV.GetAddressOf());
+
+	HRESULT b6 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Normal Maps/cobblestone.png").c_str(),
+		0,
+		cobblestoneNormalSRV.GetAddressOf());
+
+
+
+	HRESULT b7 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Base Maps/cushion.png").c_str(),
+		0,
+		cushionSRV.GetAddressOf());
+
+	HRESULT b8 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Specular Maps/cushion.png").c_str(),
+		0,
+		cushionSpecularSRV.GetAddressOf());
+
+	HRESULT b9 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Normal Maps/cushion.png").c_str(),
+		0,
+		cushionNormalSRV.GetAddressOf());
+
+
+
+	HRESULT b10 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Specular Maps/flat.png").c_str(),
+		0,
+		flatSpecularSRV.GetAddressOf());
+
+	HRESULT b11 = CreateWICTextureFromFile(device.Get(),
 		context.Get(),
 		FixPath(L"../../Assets/Textures/Normal Maps/flat.png").c_str(),
 		0,
 		flatNormalSRV.GetAddressOf());
+
+	srvSufaceTexuturesVector.push_back(rockSRV);
+	srvSpecularMapVector.push_back(rockSpecularSRV);
+	srvNormalMapVector.push_back(rockNormalSRV);
+
+	srvSufaceTexuturesVector.push_back(cobblestoneSRV);
+	srvSpecularMapVector.push_back(cobblestoneSpecularSRV);
+	srvNormalMapVector.push_back(cobblestoneNormalSRV);
+
+	srvSufaceTexuturesVector.push_back(cushionSRV);
+	srvSpecularMapVector.push_back(cushionSpecularSRV);
+	srvNormalMapVector.push_back(cushionNormalSRV);
+
 
 	//Create Materials
 	CreateMaterials();
@@ -181,18 +255,18 @@ void Game::LoadAssets()
 		std::shared_ptr<Material> mat = materials[i];
 
 		mat->AddSampler("BasicSampler", samplerState);
-		mat->AddTextureSRV("SurfaceTexture", rockSRV);
-		mat->AddTextureSRV("SpecularMap", flatSpecularSRV);
+
+
+		mat->AddTextureSRV("SurfaceTexture", srvSufaceTexuturesVector[i % srvSufaceTexuturesVector.size()]);
+		mat->AddTextureSRV("SpecularMap", srvSpecularMapVector[i % srvSufaceTexuturesVector.size()]);
 
 		//top row uses their own normals
 		if (i < 3)
-			mat->AddTextureSRV("NormalMap", rockNormalSRV);
+			mat->AddTextureSRV("NormalMap", srvNormalMapVector[i % srvNormalMapVector.size()]);
 
 		//bottom row uses flat normal map
 		else
 			mat->AddTextureSRV("NormalMap", flatNormalSRV);
-
-
 	}
 
 	CreateEntites();
