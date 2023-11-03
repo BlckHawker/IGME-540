@@ -69,9 +69,9 @@ void Camera::UpdateProjectionMatrix(float aspectRatio)
 }
 void Camera::ResetPosition()
 {
-	transform->SetPosition(0, 0, -1);
-	transform->SetRotation(0, 0, 0);
-	transform->SetScale(1, 1, 1);
+	transform->SetPosition(0.0f, 0.0f, -1.0f);
+	transform->SetRotation(0.0f, 0.0f, 0.0f);
+	transform->SetScale(1.0f, 1.0f, 1.0f);
 }
 void Camera::SetFieldOfView(float fov, float aspectRatio)
 {
@@ -84,7 +84,7 @@ void Camera::UpdateViewMatrix()
 	DirectX::XMFLOAT3 forward = transform->GetForward();
 	DirectX::XMMATRIX view = DirectX::XMMatrixLookToLH(DirectX::XMLoadFloat3(&position),
 													   DirectX::XMLoadFloat3(&forward), 
-													   DirectX::XMVectorSet(0, 1, 0, 0));
+													   DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
 	XMStoreFloat4x4(&viewMatrix, view);
 }
 void Camera::Update(DirectX::XMFLOAT3 moveVectors, DirectX::XMFLOAT3 rotateVectors)

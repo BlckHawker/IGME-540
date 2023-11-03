@@ -16,6 +16,7 @@ struct VertexShaderInput
     float3 localPosition : POSITION; // XYZ position
     float3 normal : NORMAL;
     float2 uv : TEXCOORD;
+    float3 tangent : TANGENT;
 	
 };
 
@@ -35,6 +36,7 @@ struct VertexToPixel
     float3 normal : NORMAL;
     float2 uv : TEXCOORD;
     float3 worldPosition : POSITION;
+    float3 tangent : TANGENT;
 };
 
 #define LIGHT_TYPE_DIRECTIONAL 0
@@ -89,6 +91,9 @@ float3 CalculateDirectionalLight(Light directionalLight, float3 normal, float3 c
     float3 directionToCamera = normalize(cameraPosition - pixelWorldPosition);
     float diffuseAmount = CalculateDiffuseAmount(normal, lightDirection);
     float phongSpecular = CalculatePhongSpecular(cameraPosition, pixelWorldPosition, -lightDirection, normal, roughness) * specularScale;
+    
+    phongSpecular *= any(diffuseAmount);
+    
     float3 finalColor = surfaceColor.xyz * (diffuseAmount + phongSpecular) * directionalLight.Intensity * directionalLight.Color;
     return finalColor;
 }
@@ -109,6 +114,9 @@ float3 CalculatePointLight(Light pointLight, float3 normal, float3 cameraPositio
     float attenuation = Attenuate(pointLight, pixelWorldPosition);
     float diffuseAmount = CalculateDiffuseAmount(normal, directionToLight);
     float phongSpecular = CalculatePhongSpecular(directiontoCamera, pixelWorldPosition, directionToLight, normal, roughness) * specularScale;
+    
+    phongSpecular *= any(diffuseAmount);
+    
     float3 finalColor = surfaceColor.xyz * (diffuseAmount + phongSpecular) * pointLight.Intensity * pointLight.Color * attenuation;
     return finalColor;
 

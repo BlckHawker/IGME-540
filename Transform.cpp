@@ -35,9 +35,9 @@ void Transform::UpdateMatrices()
 void Transform::UpateDirections()
 {
 	DirectX::XMVECTOR quternionRotation = DirectX::XMQuaternionRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
-	XMStoreFloat3(&right, DirectX::XMVector3Rotate(DirectX::XMVectorSet(1, 0, 0, 0), quternionRotation));
-	XMStoreFloat3(&up, DirectX::XMVector3Rotate(DirectX::XMVectorSet(0, 1, 0, 0), quternionRotation));
-	XMStoreFloat3(&forward, DirectX::XMVector3Rotate(DirectX::XMVectorSet(0, 0, 1, 0), quternionRotation));
+	XMStoreFloat3(&right, DirectX::XMVector3Rotate(DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f), quternionRotation));
+	XMStoreFloat3(&up, DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), quternionRotation));
+	XMStoreFloat3(&forward, DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), quternionRotation));
 	dirtyDirections = false;
 }
 
@@ -135,7 +135,7 @@ DirectX::XMFLOAT4X4 Transform::GetWorldInverseTransposeMatrix()
 
 void Transform::MoveRelative(float x, float y, float z)
 {
-	if (x == 0 && y == 0 && z == 0)
+	if (x == 0.0f && y == 0.0f && z == 0.0f)
 		return;
 
 	//this code is very similar to the demo because I was reffering to it while trying to fix a bug
@@ -154,7 +154,7 @@ void Transform::MoveRelative(DirectX::XMFLOAT3 offset)
 
 void Transform::MoveAbsolute(float x, float y, float z)
 {
-	if (x == 0 && y == 0 && z == 0)
+	if (x == 0.0f && y == 0.0f && z == 0.0f)
 		return;
 	position = DirectX::XMFLOAT3(position.x + x, position.y + y, position.z + z);
 	dirtyMatrix = true;
@@ -167,7 +167,7 @@ void Transform::MoveAbsolute(DirectX::XMFLOAT3 offset)
 
 void Transform::Rotate(float pitch, float yaw, float roll)
 {
-	if (pitch == 0 && yaw == 0 && roll == 0)
+	if (pitch == 0.0f && yaw == 0.0f && roll == 0.0f)
 		return;
 	rotation = DirectX::XMFLOAT3(rotation.x + pitch, rotation.y + yaw, rotation.z + roll);
 	dirtyDirections = true;
@@ -181,7 +181,7 @@ void Transform::Rotate(DirectX::XMFLOAT3 rotation)
 
 void Transform::Scale(float x, float y, float z)
 {
-	if (x == 1 && y == 1 && z == 1)
+	if (x == 1.0f && y == 1.0f && z == 1.0f)
 		return;
 
 	scale = DirectX::XMFLOAT3(scale.x * x, scale.y * y, scale.z * z);

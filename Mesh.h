@@ -40,6 +40,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer;
 
 	int indexCount;
+	void CalculateTangents(Vertex* verts, int numVerts, unsigned int* indices, int numIndices);
 	void CreateVertexAndIndexBuffer(Microsoft::WRL::ComPtr<ID3D11Device> device, Vertex* vertexObjects, int vertexCount, unsigned int* indices);
 };
 

@@ -6,12 +6,13 @@ cbuffer ExternalData : register(b0)
     float roughness;
     float3 cameraPosition;
     float3 ambient;
-    Light lights[5];  
+    Light lights[2];  
     float2 uvOffset;
 }
 
 Texture2D SurfaceTexture : register(t0); // "t" registers for textures
 Texture2D SpecularMap : register(t1);
+Texture2D NormalMap : register(t2);
 SamplerState BasicSampler : register(s0); // "s" registers for samplers
 
 // --------------------------------------------------------
@@ -29,21 +30,37 @@ float4 main(VertexToPixel input) : SV_TARGET
 	// - This color (like most values passing through the rasterizer) is 
 	//   interpolated for each pixel between the corresponding vertices 
 	//   of the triangle we're rendering
-	
     // Adjust the variables below as necessary to work with your own code
+    input.normal = normalize(input.normal);
+    input.tangent = normalize(input.tangent);
+
+    // Feel free to adjust/simplify this code to fit with your existing shader(s)
+    // Simplifications include not re-normalizing the same vector more than once!
+    float3 N = input.normal; // Must be normalized here or before
+    float3 T = input.tangent; // Must be normalized here or before
+    T = normalize(T - N * dot(T, N)); // Gram-Schmidt assumes T&N are normalized!
+    float3 B = cross(T, N);
+    float3x3 TBN = float3x3(T, B, N);
+    
+    float3 unpackedNormal = NormalMap.Sample(BasicSampler, input.uv).rgb * 2.0f - 1.0f;
+    unpackedNormal = normalize(unpackedNormal);
+    
+    // Assumes that input.normal is the normal later in the shader
+    input.normal = mul(unpackedNormal, TBN); // Note multiplication order!
+    
     float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb * colorTint.rgb;
     float specularScale = SpecularMap.Sample(BasicSampler, input.uv).b;
     
-    float3 smallAmbience = ambient / 5;
-    input.normal = normalize(input.normal);  
+    float3 smallAmbience = ambient / 5.0f;
     
-    float3 lightSum = float3(0, 0, 0);
+    float3 lightSum = float3(0.0f, 0.0f, 0.0f);
     
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 2; i++)
     {
-        lightSum += GetLightColor(lights[i], input.normal, cameraPosition, input.worldPosition, roughness, float4(surfaceColor, 1), specularScale);
-
+        lightSum += GetLightColor(lights[i], input.normal, cameraPosition, input.worldPosition, roughness, float4(surfaceColor, 1.0f), specularScale);
     }
     
-    return float4(lightSum, 1);
+    return float4(lightSum, 1.0f);
+    
+    //return float4(lightSum, 1);
 }

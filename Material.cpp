@@ -62,7 +62,7 @@ void Material::AddSampler(std::string name, Microsoft::WRL::ComPtr<ID3D11Sampler
 
 float Material::Clamp(float val)
 {
-	return val < 0 ? 0 : val > 1 ? 1 : val;
+	return val < 0.0f ? 0.0f : val > 1.0f ? 1.0f : val;
 }
 
 void Material::SetLights(std::string name, const void* data, unsigned int size)

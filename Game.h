@@ -63,15 +63,13 @@ private:
 	std::vector<std::shared_ptr<Material>> materials;
 
 
-	const int entityNum = 3; //the amount of entities that will spawn
+	const int entityNum = 6; //the amount of entities that will spawn
 	std::vector<Entity> entities;
 
 	int activeCameraIndex = 1;
 	std::vector< std::shared_ptr<Camera>> cameras;
 	std::vector<Light> lights;
 
-	
-	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> shaderResourceViewVectors;
-	std::vector<Microsoft::WRL::ComPtr<ID3D11SamplerState>> samplerStateVectors;
+	bool rotate = true; //tells emttites to rotate
 };
 
