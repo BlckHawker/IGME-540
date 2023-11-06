@@ -1,4 +1,3 @@
-
 #include "ShaderIncludes.hlsli"
 cbuffer ExternalData : register(b0)
 {
@@ -61,6 +60,4 @@ float4 main(VertexToPixel input) : SV_TARGET
     }
     
     return float4(lightSum, 1.0f);
-    
-    //return float4(lightSum, 1);
 }

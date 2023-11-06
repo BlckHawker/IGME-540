@@ -119,12 +119,6 @@ void Game::Init()
 
 void Game::LoadAssets()
 {
-	//Load the meshes
-	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cube.obj").c_str()));
-	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cylinder.obj").c_str()));
-	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/sphere.obj").c_str()));
-
-	//Load the textures
 
 	//sampler states
 	D3D11_SAMPLER_DESC samplerData = {};
@@ -135,10 +129,37 @@ void Game::LoadAssets()
 	samplerData.MaxAnisotropy = 16;
 	samplerData.MaxLOD = D3D11_FLOAT32_MAX;
 
-	
+
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
 	HRESULT a1 = device->CreateSamplerState(&samplerData, samplerState.GetAddressOf());
+
+	//create skybox
+	
+	std::shared_ptr<Mesh> skybBoxMesh = std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cube.obj").c_str());
+	std::shared_ptr<SimpleVertexShader> skyBoxVertexShaders = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"SkyboxVertexShader.cso").c_str());
+	std::shared_ptr<SimplePixelShader> skyBoxPixelShaders = std::make_shared<SimplePixelShader>(device, context, FixPath(L"SkyboxPixelShader.cso").c_str());
+
+	skyBox = std::make_shared<Sky>(
+		FixPath(L"../../Assets/SkyBoxes/Clouds Pink/right.png").c_str(),
+		FixPath(L"../../Assets/SkyBoxes/Clouds Pink/left.png").c_str(),
+		FixPath(L"../../Assets/SkyBoxes/Clouds Pink/up.png").c_str(),
+		FixPath(L"../../Assets/SkyBoxes/Clouds Pink/down.png").c_str(),
+		FixPath(L"../../Assets/SkyBoxes/Clouds Pink/front.png").c_str(),
+		FixPath(L"../../Assets/SkyBoxes/Clouds Pink/back.png").c_str(),
+		skybBoxMesh,
+		skyBoxVertexShaders,
+		skyBoxPixelShaders,
+		samplerState,
+		device,
+		context);
+
+	//Load the meshes
+	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cube.obj").c_str()));
+	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cylinder.obj").c_str()));
+	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/sphere.obj").c_str()));
+
+	//Load the textures
 
 	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> srvSufaceTexuturesVector;
 	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> srvSpecularMapVector;
@@ -565,6 +586,9 @@ void Game::Draw(float deltaTime, float totalTime)
 		entity.GetMaterial()->SetTextureData();
 		entity.Draw(cameras[activeCameraIndex]);
 	}
+
+	//draw skybox last
+	skyBox->Draw(cameras[activeCameraIndex]);
 
 	// Draw ImGui
 	ImGui::Render();
