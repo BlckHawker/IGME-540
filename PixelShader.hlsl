@@ -50,9 +50,7 @@ float4 main(VertexToPixel input) : SV_TARGET
     float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb * colorTint.rgb;
     float specularScale = SpecularMap.Sample(BasicSampler, input.uv).b;
     
-    float3 smallAmbience = ambient / 5.0f;
-    
-    float3 lightSum = float3(0.0f, 0.0f, 0.0f);
+    float3 lightSum = surfaceColor * ambient;
     
     for (int i = 0; i < 2; i++)
     {

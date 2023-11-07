@@ -584,6 +584,8 @@ void Game::Draw(float deltaTime, float totalTime)
 	{
 		entity.GetMaterial()->SetLights("lights", &lights[0], sizeof(Light) * (int)lights.size());
 		entity.GetMaterial()->SetTextureData();
+		entity.GetMaterial()->GetPixelShader()->SetFloat3("ambient", DirectX::XMFLOAT3(0.59f, 0.42f, 0.52f));
+		entity.GetMaterial()->GetPixelShader()->CopyAllBufferData();
 		entity.Draw(cameras[activeCameraIndex]);
 	}
 
