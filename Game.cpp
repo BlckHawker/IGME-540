@@ -71,20 +71,20 @@ void Game::Init()
 		switch (i)
 		{
 			case 0:
-				xPos = -1;
+				xPos = -1.0f;
 				yRotation = DirectX::XM_PIDIV4;
 				fov = DirectX::XM_PIDIV4;
 				break;
 			case 2:
-				xPos = 1;
+				xPos = 1.0f;
 				yRotation = -DirectX::XM_PIDIV4;
-				fov = DirectX::XM_PI / 3;
+				fov = DirectX::XM_PI / 3.0f;
 				break;
 		}
 
 		if (i != 1)
 		{
-			cameras[i]->GetTransform()->MoveAbsolute(xPos, 0, 0);
+			cameras[i]->GetTransform()->MoveAbsolute(xPos, 0.0f, 0.0f);
 			cameras[i]->GetTransform()->Rotate(0.0f, yRotation, 0.0f);
 			cameras[i]->SetFieldOfView(fov, aspectRatio);
 		}
@@ -119,12 +119,6 @@ void Game::Init()
 
 void Game::LoadAssets()
 {
-	//Load the meshes
-	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cube.obj").c_str()));
-	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cylinder.obj").c_str()));
-	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/sphere.obj").c_str()));
-
-	//Load the textures
 
 	//sampler states
 	D3D11_SAMPLER_DESC samplerData = {};
@@ -135,81 +129,166 @@ void Game::LoadAssets()
 	samplerData.MaxAnisotropy = 16;
 	samplerData.MaxLOD = D3D11_FLOAT32_MAX;
 
-	
+
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
-	HRESULT a = device->CreateSamplerState(&samplerData, samplerState.GetAddressOf());
+	HRESULT a1 = device->CreateSamplerState(&samplerData, samplerState.GetAddressOf());
 
-	samplerStateVectors.push_back(samplerState);
+	//create skybox
+	
+	std::shared_ptr<Mesh> skybBoxMesh = std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cube.obj").c_str());
+	std::shared_ptr<SimpleVertexShader> skyBoxVertexShaders = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"SkyboxVertexShader.cso").c_str());
+	std::shared_ptr<SimplePixelShader> skyBoxPixelShaders = std::make_shared<SimplePixelShader>(device, context, FixPath(L"SkyboxPixelShader.cso").c_str());
+
+	skyBox = std::make_shared<Sky>(
+		FixPath(L"../../Assets/SkyBoxes/Clouds Pink/right.png").c_str(),
+		FixPath(L"../../Assets/SkyBoxes/Clouds Pink/left.png").c_str(),
+		FixPath(L"../../Assets/SkyBoxes/Clouds Pink/up.png").c_str(),
+		FixPath(L"../../Assets/SkyBoxes/Clouds Pink/down.png").c_str(),
+		FixPath(L"../../Assets/SkyBoxes/Clouds Pink/front.png").c_str(),
+		FixPath(L"../../Assets/SkyBoxes/Clouds Pink/back.png").c_str(),
+		skybBoxMesh,
+		skyBoxVertexShaders,
+		skyBoxPixelShaders,
+		samplerState,
+		device,
+		context);
+
+	//Load the meshes
+	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cube.obj").c_str()));
+	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/cylinder.obj").c_str()));
+	meshes.push_back(std::make_shared<Mesh>(device, context, FixPath("../../Assets/Models/sphere.obj").c_str()));
+
+	//Load the textures
+
+	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> srvSufaceTexuturesVector;
+	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> srvSpecularMapVector;
+	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> srvNormalMapVector;
 
 	//Shader Resource View
 
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> brokenTilesSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> brokenTilesSpecularSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rustyMetalSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rustyMetalSpecularSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> tileSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> tileSpecularSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockSpecularSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockNormalSRV;
 
-	HRESULT b = CreateWICTextureFromFile(device.Get(),
-	context.Get(),
-	FixPath(L"../../Assets/Specular Maps/brokentiles.png").c_str(),
-	0,
-	brokenTilesSRV.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobblestoneSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobblestoneSpecularSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobblestoneNormalSRV;
 
-	HRESULT c = CreateWICTextureFromFile(device.Get(),
-	context.Get(),
-	FixPath(L"../../Assets/Specular Maps/brokentiles_specular.png").c_str(),
-	0,
-	brokenTilesSpecularSRV.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cushionSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cushionSpecularSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cushionNormalSRV;
+
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> flatNormalSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> flatSpecularSRV;
 
 
-	HRESULT d = CreateWICTextureFromFile(device.Get(),
-	context.Get(),
-	FixPath(L"../../Assets/Specular Maps/rustymetal.png").c_str(),
-	0,
-	rustyMetalSRV.GetAddressOf());
 
-	HRESULT e = CreateWICTextureFromFile(device.Get(),
-	context.Get(),
-	FixPath(L"../../Assets/Specular Maps/rustymetal_specular.png").c_str(),
-	0,
-	rustyMetalSpecularSRV.GetAddressOf());
+	HRESULT b1 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Base Maps/rock.png").c_str(),
+		0,
+		rockSRV.GetAddressOf());
 
-	HRESULT f = CreateWICTextureFromFile(device.Get(),
-	context.Get(),
-	FixPath(L"../../Assets/Specular Maps/tiles.png").c_str(),
-	0,
-	tileSRV.GetAddressOf());
+	HRESULT b2 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Specular Maps/rock.png").c_str(),
+		0,
+		rockSpecularSRV.GetAddressOf());
 
-	HRESULT g = CreateWICTextureFromFile(device.Get(),
-	context.Get(),
-	FixPath(L"../../Assets/Specular Maps/tiles_specular.png").c_str(),
-	0,
-	tileSpecularSRV.GetAddressOf());
+	HRESULT b3 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Normal Maps/rock.png").c_str(),
+		0,
+		rockNormalSRV.GetAddressOf());
 
-	shaderResourceViewVectors.push_back(brokenTilesSRV);
-	shaderResourceViewVectors.push_back(brokenTilesSpecularSRV);
-	shaderResourceViewVectors.push_back(rustyMetalSRV);
-	shaderResourceViewVectors.push_back(rustyMetalSpecularSRV);
-	shaderResourceViewVectors.push_back(tileSRV);
-	shaderResourceViewVectors.push_back(tileSpecularSRV);
+
+	HRESULT b4 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Base Maps/cobblestone.png").c_str(),
+		0,
+		cobblestoneSRV.GetAddressOf());
+
+	HRESULT b5 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Specular Maps/cobblestone.png").c_str(),
+		0,
+		cobblestoneSpecularSRV.GetAddressOf());
+
+	HRESULT b6 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Normal Maps/cobblestone.png").c_str(),
+		0,
+		cobblestoneNormalSRV.GetAddressOf());
+
+
+
+	HRESULT b7 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Base Maps/cushion.png").c_str(),
+		0,
+		cushionSRV.GetAddressOf());
+
+	HRESULT b8 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Specular Maps/cushion.png").c_str(),
+		0,
+		cushionSpecularSRV.GetAddressOf());
+
+	HRESULT b9 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Normal Maps/cushion.png").c_str(),
+		0,
+		cushionNormalSRV.GetAddressOf());
+
+
+
+	HRESULT b10 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Specular Maps/flat.png").c_str(),
+		0,
+		flatSpecularSRV.GetAddressOf());
+
+	HRESULT b11 = CreateWICTextureFromFile(device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/Normal Maps/flat.png").c_str(),
+		0,
+		flatNormalSRV.GetAddressOf());
+
+	srvSufaceTexuturesVector.push_back(rockSRV);
+	srvSpecularMapVector.push_back(rockSpecularSRV);
+	srvNormalMapVector.push_back(rockNormalSRV);
+
+	srvSufaceTexuturesVector.push_back(cobblestoneSRV);
+	srvSpecularMapVector.push_back(cobblestoneSpecularSRV);
+	srvNormalMapVector.push_back(cobblestoneNormalSRV);
+
+	srvSufaceTexuturesVector.push_back(cushionSRV);
+	srvSpecularMapVector.push_back(cushionSpecularSRV);
+	srvNormalMapVector.push_back(cushionNormalSRV);
+
 
 	//Create Materials
 	CreateMaterials();
-	
-	//add texutres to materials
-	for (std::shared_ptr<Material> mat : materials)
+
+	for (int i = 0; i < materials.size(); i++)
+	{
+		std::shared_ptr<Material> mat = materials[i];
+
 		mat->AddSampler("BasicSampler", samplerState);
 
-	materials[0]->AddTextureSRV("SurfaceTexture", brokenTilesSRV);
-	materials[0]->AddTextureSRV("SpecularMap", brokenTilesSpecularSRV);
 
-	materials[1]->AddTextureSRV("SurfaceTexture", rustyMetalSRV);
-	materials[1]->AddTextureSRV("SpecularMap", rustyMetalSpecularSRV);
+		mat->AddTextureSRV("SurfaceTexture", srvSufaceTexuturesVector[i % srvSufaceTexuturesVector.size()]);
+		mat->AddTextureSRV("SpecularMap", srvSpecularMapVector[i % srvSufaceTexuturesVector.size()]);
 
-	materials[2]->AddTextureSRV("SurfaceTexture", tileSRV);
-	materials[2]->AddTextureSRV("SpecularMap", tileSpecularSRV);
+		//top row uses their own normals
+		if (i < 3)
+			mat->AddTextureSRV("NormalMap", srvNormalMapVector[i % srvNormalMapVector.size()]);
+
+		//bottom row uses flat normal map
+		else
+			mat->AddTextureSRV("NormalMap", flatNormalSRV);
+	}
 
 	CreateEntites();
 
@@ -220,30 +299,15 @@ void Game::CreateLights()
 {
 	lights.push_back({});
 	lights.push_back({});
-	lights.push_back({});
-	lights.push_back({});
-	lights.push_back({});
 
 
-	lights[0].Color = DirectX::XMFLOAT3(1, 1, 1);
-	lights[0].Direction = DirectX::XMFLOAT3(-1, 0, 0); //light comes from the right
-	lights[0].Intensity = 1;
+	lights[0].Color = DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f);
+	lights[0].Direction = DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f); //light points to the right
+	lights[0].Intensity = 1.0f;
 
-	lights[1].Color = DirectX::XMFLOAT3(1, 1, 1);
-	lights[1].Direction = DirectX::XMFLOAT3(0, -1, 0); //light coems from up
-	lights[1].Intensity = 1;
-
-	lights[2].Color = DirectX::XMFLOAT3(1, 1, 1);
-	lights[2].Direction = DirectX::XMFLOAT3(1, 0, 0); //light comes from the left
-	lights[2].Intensity = 1;
-
-	lights[3].Color = DirectX::XMFLOAT3(1, 1, 1);
-	lights[3].Direction = DirectX::XMFLOAT3(0, 0, 1); //light comes from the front
-	lights[3].Intensity = 1;
-
-	lights[4].Color = DirectX::XMFLOAT3(1, 1, 1);
-	lights[4].Direction = DirectX::XMFLOAT3(0, 0, -1); //light comes from the back
-	lights[4].Intensity = 1;
+	lights[1].Color = DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f);
+	lights[1].Direction = DirectX::XMFLOAT3(-1.0f, 0.0f, 0.0f); //light points to the left
+	lights[1].Intensity = 1.0f;
 }
 
 
@@ -267,9 +331,8 @@ void Game::LoadShaders()
 
 void Game::CreateMaterials()
 {
-	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(1, 1, 1, 1), pixelShaders[0], vertexShaders[0]));
-	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(1, 1, 1, 1), pixelShaders[0], vertexShaders[0]));
-	materials.push_back(std::make_shared<Material>(1.0, DirectX::XMFLOAT4(1, 1, 1, 1), pixelShaders[0], vertexShaders[0]));
+	for (int i = 0; i < 6; i++)
+		materials.push_back(std::make_shared<Material>(1.0f, DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), pixelShaders[0], vertexShaders[0]));
 }
 
 
@@ -284,12 +347,18 @@ void Game::CreateEntites()
 	{
 		entities.push_back(Entity(meshes[i % meshes.size()], materials[i % materials.size()]));
 
-		entities[i].GetTransform()->MoveAbsolute(0, 0, 3);
+		entities[i].GetTransform()->MoveAbsolute(0.0f, 0.0f, 3.0f);
+
+		if (i % 3 == 0)
+			entities[i].GetTransform()->MoveAbsolute(-3.0f, 0.0f, 0.0f);
+
+		else if(i % 3 == 2)
+			entities[i].GetTransform()->MoveAbsolute(3.0f, 0.0f, 0.0f);
+
+		if (i / 3 == 1)
+			entities[i].GetTransform()->MoveAbsolute(0.0f, -3.0f, 0.0f);
+
 	}
-
-	entities[0].GetTransform()->MoveAbsolute(-3, 0, 0);
-	entities[2].GetTransform()->MoveAbsolute(3, 0, 0);
-
 }
 
 void Game::CameraInput(float deltaTime)
@@ -347,7 +416,16 @@ void Game::Update(float deltaTime, float totalTime)
 {
 	ImGuiInitialization(deltaTime, this->windowHeight, this->windowWidth);
 
+	if (rotate)
+	{
+		for (auto& e : entities)
+			e.GetTransform()->Rotate(0, -deltaTime * 0.25f, 0);
+	}
+
 	CameraInput(deltaTime);
+
+
+	
 
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::GetInstance().KeyDown(VK_ESCAPE))
@@ -445,106 +523,35 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 
 	if (ImGui::TreeNode("Lights"))
 	{
-		if (ImGui::TreeNode("Directional Light 1"))
+		for (int i = 1; i < lights.size() + 1; i++)
 		{
-			DirectX::XMFLOAT3 direction = lights[0].Direction;
-			float intensity = lights[0].Intensity;
-
-
-			if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f))
+			if (ImGui::TreeNode((void*)(intptr_t)i, "Light %d", i))
 			{
-				lights[0].Direction = direction;
+				int index = i - 1;
+				
+				//directional Light
+				if (lights[index].Type == 0)
+				{
+					DirectX::XMFLOAT3 direction = lights[index].Direction;
+					float intensity = lights[index].Intensity;
+
+
+					if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f))
+					{
+						lights[index].Direction = direction;
+					}
+
+					if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 10.0f))
+					{
+						lights[index].Intensity = intensity;
+					}
+				}
+
+				ImGui::TreePop();
+
 			}
-
-			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
-			{
-				lights[0].Intensity = intensity;
-			}
-
-			ImGui::TreePop();
-
 		}
-
-		if (ImGui::TreeNode("Directional Light 2"))
-		{
-			DirectX::XMFLOAT3 direction = lights[1].Direction;
-			float intensity = lights[1].Intensity;
-
-
-			if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f))
-			{
-				lights[1].Direction = direction;
-			}
-
-			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
-			{
-				lights[1].Intensity = intensity;
-			}
-
-			ImGui::TreePop();
-
-		}
-
-		if (ImGui::TreeNode("Directional Light 3"))
-		{
-			DirectX::XMFLOAT3 direction = lights[2].Direction;
-			float intensity = lights[2].Intensity;
-
-
-			if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f))
-			{
-				lights[2].Direction = direction;
-			}
-
-			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
-			{
-				lights[2].Intensity = intensity;
-			}
-
-			ImGui::TreePop();
-
-		}
-
-		if (ImGui::TreeNode("Directional Light 4"))
-		{
-			DirectX::XMFLOAT3 direction = lights[3].Direction;
-			float intensity = lights[3].Intensity;
-
-
-			if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f))
-			{
-				lights[3].Direction = direction;
-			}
-
-			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
-			{
-				lights[3].Intensity = intensity;
-			}
-
-			ImGui::TreePop();
-
-		}
-
-		if (ImGui::TreeNode("Directional Light 5"))
-		{
-			DirectX::XMFLOAT3 direction = lights[4].Direction;
-			float intensity = lights[4].Intensity;
-
-
-			if (ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f))
-			{
-				lights[4].Direction = direction;
-			}
-
-			if (ImGui::DragFloat("Inensity", &intensity, 0.01f, 0.0f, 1.0f))
-			{
-				lights[4].Intensity = intensity;
-			}
-
-			ImGui::TreePop();
-
-		}
-	
+		
 		ImGui::TreePop();
 
 	}
@@ -577,8 +584,13 @@ void Game::Draw(float deltaTime, float totalTime)
 	{
 		entity.GetMaterial()->SetLights("lights", &lights[0], sizeof(Light) * (int)lights.size());
 		entity.GetMaterial()->SetTextureData();
+		entity.GetMaterial()->GetPixelShader()->SetFloat3("ambient", DirectX::XMFLOAT3(0.59f, 0.42f, 0.52f));
+		entity.GetMaterial()->GetPixelShader()->CopyAllBufferData();
 		entity.Draw(cameras[activeCameraIndex]);
 	}
+
+	//draw skybox last
+	skyBox->Draw(cameras[activeCameraIndex]);
 
 	// Draw ImGui
 	ImGui::Render();

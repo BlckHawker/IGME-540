@@ -16,7 +16,7 @@
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_dx11.h"
 #include "ImGui/imgui_impl_win32.h"
-
+#include "Sky.h"
 #include <vector>
 #include <memory>
 
@@ -57,21 +57,22 @@ private:
 	// Shaders and shader-related constructs
 	std::vector<std::shared_ptr<SimpleVertexShader>> vertexShaders;
 	std::vector<std::shared_ptr<SimplePixelShader>> pixelShaders;
+	std::vector<std::shared_ptr<SimpleVertexShader>> skyBoxVertexShaders;
+	std::vector<std::shared_ptr<SimplePixelShader>> skyBoxPixelShaders;
 
 	std::vector<std::shared_ptr<Mesh>> meshes;
 
 	std::vector<std::shared_ptr<Material>> materials;
 
+	std::shared_ptr<Sky> skyBox;
 
-	const int entityNum = 3; //the amount of entities that will spawn
+	const int entityNum = 6; //the amount of entities that will spawn
 	std::vector<Entity> entities;
 
 	int activeCameraIndex = 1;
 	std::vector< std::shared_ptr<Camera>> cameras;
 	std::vector<Light> lights;
 
-	
-	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> shaderResourceViewVectors;
-	std::vector<Microsoft::WRL::ComPtr<ID3D11SamplerState>> samplerStateVectors;
+	bool rotate = true; //tells emttites to rotate
 };
 
