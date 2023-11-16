@@ -299,6 +299,8 @@ void Game::CreateLights()
 {
 	lights.push_back({});
 	lights.push_back({});
+	lights.push_back({});
+
 
 
 	lights[0].Color = DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f);
@@ -308,6 +310,10 @@ void Game::CreateLights()
 	lights[1].Color = DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f);
 	lights[1].Direction = DirectX::XMFLOAT3(-1.0f, 0.0f, 0.0f); //light points to the left
 	lights[1].Intensity = 1.0f;
+
+	lights[2].Color = DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f);
+	lights[2].Direction = DirectX::XMFLOAT3(0.0f, -1.0f, 0.0f); //light points down
+	lights[2].Intensity = 1.0f;
 }
 
 
@@ -585,6 +591,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		entity.GetMaterial()->SetLights("lights", &lights[0], sizeof(Light) * (int)lights.size());
 		entity.GetMaterial()->SetTextureData();
 		entity.GetMaterial()->GetPixelShader()->SetFloat3("ambient", DirectX::XMFLOAT3(0.59f, 0.42f, 0.52f));
+		entity.GetMaterial()->GetPixelShader()->SetInt("lightNum", (int)lights.size());
 		entity.GetMaterial()->GetPixelShader()->CopyAllBufferData();
 		entity.Draw(cameras[activeCameraIndex]);
 	}

@@ -1,11 +1,14 @@
 #include "ShaderIncludes.hlsli"
+
+#define MAX_LIGHTS 128
 cbuffer ExternalData : register(b0)
 {
     float4 colorTint;
     float roughness;
     float3 cameraPosition;
     float3 ambient;
-    Light lights[2];  
+    Light lights[MAX_LIGHTS];
+    int lightNum;
     float2 uvOffset;
 }
 
@@ -51,8 +54,10 @@ float4 main(VertexToPixel input) : SV_TARGET
     float specularScale = SpecularMap.Sample(BasicSampler, input.uv).b;
     
     float3 lightSum = surfaceColor * ambient;
+   
+    int lightUsed = lightNum > MAX_LIGHTS ? MAX_LIGHTS : lightNum;
     
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < lightUsed; i++)
     {
         lightSum += GetLightColor(lights[i], input.normal, cameraPosition, input.worldPosition, roughness, float4(surfaceColor, 1.0f), specularScale);
     }
