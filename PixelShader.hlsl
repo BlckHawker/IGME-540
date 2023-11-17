@@ -10,6 +10,7 @@ cbuffer ExternalData : register(b0)
     Light lights[MAX_LIGHTS];
     int lightNum;
     float2 uvOffset;
+    int useGammaCorrection;
 }
 
 Texture2D SurfaceTexture : register(t0); // "t" registers for textures
@@ -46,11 +47,15 @@ float4 main(VertexToPixel input) : SV_TARGET
     
     float3 unpackedNormal = NormalMap.Sample(BasicSampler, input.uv).rgb * 2.0f - 1.0f;
     unpackedNormal = normalize(unpackedNormal);
+    input.normal = mul(unpackedNormal, TBN); 
     
-    // Assumes that input.normal is the normal later in the shader
-    input.normal = mul(unpackedNormal, TBN); // Note multiplication order!
+    float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb;
     
-    float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb * colorTint.rgb;
+    //uncorrect the gamma from the texture if using gammaCorrect
+    surfaceColor = useGammaCorrection ? pow(surfaceColor, 2.2f) : surfaceColor;
+    
+    surfaceColor *= colorTint.rgb;
+    
     float specularScale = SpecularMap.Sample(BasicSampler, input.uv).b;
     
     float3 lightSum = surfaceColor * ambient;
@@ -61,6 +66,9 @@ float4 main(VertexToPixel input) : SV_TARGET
     {
         lightSum += GetLightColor(lights[i], input.normal, cameraPosition, input.worldPosition, roughness, float4(surfaceColor, 1.0f), specularScale);
     }
+    
+    //aply gamma correction
+    lightSum = useGammaCorrection ? pow(lightSum, 1.0f / 2.2f) : lightSum;
     
     return float4(lightSum, 1.0f);
 }

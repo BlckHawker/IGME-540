@@ -271,6 +271,7 @@ void Game::LoadAssets()
 	//Create Materials
 	CreateMaterials();
 
+
 	for (int i = 0; i < materials.size(); i++)
 	{
 		std::shared_ptr<Material> mat = materials[i];
@@ -281,13 +282,12 @@ void Game::LoadAssets()
 		mat->AddTextureSRV("SurfaceTexture", srvSufaceTexuturesVector[i % srvSufaceTexuturesVector.size()]);
 		mat->AddTextureSRV("SpecularMap", srvSpecularMapVector[i % srvSufaceTexuturesVector.size()]);
 
-		//top row uses their own normals
+		//top row uses flat normals
 		if (i < 3)
-			mat->AddTextureSRV("NormalMap", srvNormalMapVector[i % srvNormalMapVector.size()]);
-
-		//bottom row uses flat normal map
-		else
 			mat->AddTextureSRV("NormalMap", flatNormalSRV);
+		//every other row uses their normals
+		else
+			mat->AddTextureSRV("NormalMap", srvNormalMapVector[i % srvNormalMapVector.size()]);
 	}
 
 	CreateEntites();
@@ -298,22 +298,11 @@ void Game::LoadAssets()
 void Game::CreateLights()
 {
 	lights.push_back({});
-	lights.push_back({});
-	lights.push_back({});
-
 
 
 	lights[0].Color = DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f);
-	lights[0].Direction = DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f); //light points to the right
+	lights[0].Direction = DirectX::XMFLOAT3(-1.0f, 0.0f, 0.0f); //light points down
 	lights[0].Intensity = 1.0f;
-
-	lights[1].Color = DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f);
-	lights[1].Direction = DirectX::XMFLOAT3(-1.0f, 0.0f, 0.0f); //light points to the left
-	lights[1].Intensity = 1.0f;
-
-	lights[2].Color = DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f);
-	lights[2].Direction = DirectX::XMFLOAT3(0.0f, -1.0f, 0.0f); //light points down
-	lights[2].Intensity = 1.0f;
 }
 
 
@@ -349,21 +338,35 @@ void Game::CreateMaterials()
 void Game::CreateEntites()
 {
 
+	size_t columnNum = (int)meshes.size();
+	size_t flatMaterialNum = materials.size() / 2; //the number of flat materials (same as tthe number of non flat materials)
 	for (int i = 0; i < entityNum; i++)
 	{
-		entities.push_back(Entity(meshes[i % meshes.size()], materials[i % materials.size()]));
+		//if in top row, use the flat normal
 
+		shared_ptr<Material> material;
+		if (i / columnNum == 0)
+		{
+			material = materials[i % (flatMaterialNum)];
+			printf("%d: flat\n", i);
+		}
+
+		else
+		{
+			material = materials[flatMaterialNum + (i % columnNum)];
+			printf("%d: not flat\n", i);
+		}
+
+		entities.push_back(Entity(meshes[i % meshes.size()], material));
+
+		//move back so not in the same space as camera
 		entities[i].GetTransform()->MoveAbsolute(0.0f, 0.0f, 3.0f);
 
-		if (i % 3 == 0)
-			entities[i].GetTransform()->MoveAbsolute(-3.0f, 0.0f, 0.0f);
+		//move horizontally based on where you are in the list
+		entities[i].GetTransform()->MoveAbsolute(-3.0f + ((i % columnNum) * 3.0f), 0.0f, 0.0f);
 
-		else if(i % 3 == 2)
-			entities[i].GetTransform()->MoveAbsolute(3.0f, 0.0f, 0.0f);
-
-		if (i / 3 == 1)
-			entities[i].GetTransform()->MoveAbsolute(0.0f, -3.0f, 0.0f);
-
+		//Move down based on the row you're on
+		entities[i].GetTransform()->MoveAbsolute(0.0f, -3.0f * (i / columnNum), 0.0f);
 	}
 }
 
@@ -586,12 +589,21 @@ void Game::Draw(float deltaTime, float totalTime)
 	}
 
 	//start drawing
-	for (Entity entity : entities)
+
+	int columnNum = meshes.size();
+
+	for (int i = 0; i < entityNum; i++)
 	{
+		Entity entity = entities[i];
 		entity.GetMaterial()->SetLights("lights", &lights[0], sizeof(Light) * (int)lights.size());
 		entity.GetMaterial()->SetTextureData();
 		entity.GetMaterial()->GetPixelShader()->SetFloat3("ambient", DirectX::XMFLOAT3(0.59f, 0.42f, 0.52f));
 		entity.GetMaterial()->GetPixelShader()->SetInt("lightNum", (int)lights.size());
+
+		//only the third row should have the gamma correct
+		int gammaNum = i / columnNum == 2;
+
+		entity.GetMaterial()->GetPixelShader()->SetInt("useGammaCorrection", gammaNum);
 		entity.GetMaterial()->GetPixelShader()->CopyAllBufferData();
 		entity.Draw(cameras[activeCameraIndex]);
 	}
