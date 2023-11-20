@@ -117,6 +117,8 @@ void Game::Init()
 
 }
 
+
+
 void Game::LoadAssets()
 {
 
@@ -129,7 +131,8 @@ void Game::LoadAssets()
 	samplerData.MaxAnisotropy = 16;
 	samplerData.MaxLOD = D3D11_FLOAT32_MAX;
 
-
+	// Quick pre-processor macro for simplifying texture loading calls below
+	#define LoadTexture(path, srv) CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(path).c_str(), 0, srv.GetAddressOf());
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
 	HRESULT a1 = device->CreateSamplerState(&samplerData, samplerState.GetAddressOf());
@@ -161,112 +164,50 @@ void Game::LoadAssets()
 
 	//Load the textures
 
-	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> srvSufaceTexuturesVector;
-	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> srvSpecularMapVector;
-	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> srvNormalMapVector;
+	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> srvAlbedoMapVector, srvNormalMapVector, srvRoughnessMapVector, srvMetalMapVector;
 
 	//Shader Resource View
-
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockSpecularSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockNormalSRV;
-
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobblestoneSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobblestoneSpecularSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobblestoneNormalSRV;
-
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cushionSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cushionSpecularSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cushionNormalSRV;
-
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> flatNormalSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> flatSpecularSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeAlbedoSRV, cobblestoneAlbedoSRV, scratchedAlbedoSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeNormalSRV, cobblestoneNormalSRV, scratchedNormalSRV, flatNormalSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeRoughnessSRV, cobblestoneRoughnessSRV, scratchedRoughnessSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeMetalSRV, cobblestoneMetalSRV, scratchedMetalSRV;
 
 
+	//================================================================================
 
-	HRESULT b1 = CreateWICTextureFromFile(device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/Base Maps/rock.png").c_str(),
-		0,
-		rockSRV.GetAddressOf());
+	LoadTexture(L"../../Assets/Textures/Albedo Maps/bronze.png", bronzeAlbedoSRV);
+	LoadTexture(L"../../Assets/Textures/Albedo Maps/cobblestone.png", cobblestoneAlbedoSRV);
+	LoadTexture(L"../../Assets/Textures/Albedo Maps/scratched.png", scratchedAlbedoSRV);
 
-	HRESULT b2 = CreateWICTextureFromFile(device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/Specular Maps/rock.png").c_str(),
-		0,
-		rockSpecularSRV.GetAddressOf());
+	LoadTexture(L"../../Assets/Textures/Normal Maps/bronze.png", bronzeNormalSRV);
+	LoadTexture(L"../../Assets/Textures/Normal Maps/cobblestone.png", cobblestoneNormalSRV);
+	LoadTexture(L"../../Assets/Textures/Normal Maps/scratched.png", scratchedNormalSRV);
+	LoadTexture(L"../../Assets/Textures/Normal Maps/flat.png", scratchedNormalSRV);
 
-	HRESULT b3 = CreateWICTextureFromFile(device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/Normal Maps/rock.png").c_str(),
-		0,
-		rockNormalSRV.GetAddressOf());
+	LoadTexture(L"../../Assets/Textures/Roughness Maps/bronze.png", bronzeRoughnessSRV);
+	LoadTexture(L"../../Assets/Textures/Roughness Maps/cobblestone.png", cobblestoneRoughnessSRV);
+	LoadTexture(L"../../Assets/Textures/Roughness Maps/scratched.png", scratchedRoughnessSRV);
 
-
-	HRESULT b4 = CreateWICTextureFromFile(device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/Base Maps/cobblestone.png").c_str(),
-		0,
-		cobblestoneSRV.GetAddressOf());
-
-	HRESULT b5 = CreateWICTextureFromFile(device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/Specular Maps/cobblestone.png").c_str(),
-		0,
-		cobblestoneSpecularSRV.GetAddressOf());
-
-	HRESULT b6 = CreateWICTextureFromFile(device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/Normal Maps/cobblestone.png").c_str(),
-		0,
-		cobblestoneNormalSRV.GetAddressOf());
+	LoadTexture(L"../../Assets/Textures/Metal Maps/bronze.png", bronzeMetalSRV);
+	LoadTexture(L"../../Assets/Textures/Metal Maps/cobblestone.png", cobblestoneMetalSRV);
+	LoadTexture(L"../../Assets/Textures/Metal Maps/scratched.png", scratchedMetalSRV);
 
 
+	srvAlbedoMapVector.push_back(bronzeAlbedoSRV);
+	srvAlbedoMapVector.push_back(cobblestoneAlbedoSRV);
+	srvAlbedoMapVector.push_back(scratchedAlbedoSRV);
 
-	HRESULT b7 = CreateWICTextureFromFile(device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/Base Maps/cushion.png").c_str(),
-		0,
-		cushionSRV.GetAddressOf());
-
-	HRESULT b8 = CreateWICTextureFromFile(device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/Specular Maps/cushion.png").c_str(),
-		0,
-		cushionSpecularSRV.GetAddressOf());
-
-	HRESULT b9 = CreateWICTextureFromFile(device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/Normal Maps/cushion.png").c_str(),
-		0,
-		cushionNormalSRV.GetAddressOf());
-
-
-
-	HRESULT b10 = CreateWICTextureFromFile(device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/Specular Maps/flat.png").c_str(),
-		0,
-		flatSpecularSRV.GetAddressOf());
-
-	HRESULT b11 = CreateWICTextureFromFile(device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/Normal Maps/flat.png").c_str(),
-		0,
-		flatNormalSRV.GetAddressOf());
-
-	srvSufaceTexuturesVector.push_back(rockSRV);
-	srvSpecularMapVector.push_back(rockSpecularSRV);
-	srvNormalMapVector.push_back(rockNormalSRV);
-
-	srvSufaceTexuturesVector.push_back(cobblestoneSRV);
-	srvSpecularMapVector.push_back(cobblestoneSpecularSRV);
+	srvNormalMapVector.push_back(bronzeNormalSRV);
 	srvNormalMapVector.push_back(cobblestoneNormalSRV);
+	srvNormalMapVector.push_back(scratchedNormalSRV);
 
-	srvSufaceTexuturesVector.push_back(cushionSRV);
-	srvSpecularMapVector.push_back(cushionSpecularSRV);
-	srvNormalMapVector.push_back(cushionNormalSRV);
+	srvRoughnessMapVector.push_back(bronzeRoughnessSRV);
+	srvRoughnessMapVector.push_back(cobblestoneRoughnessSRV);
+	srvRoughnessMapVector.push_back(scratchedRoughnessSRV);
 
+	srvMetalMapVector.push_back(bronzeMetalSRV);
+	srvMetalMapVector.push_back(cobblestoneMetalSRV);
+	srvMetalMapVector.push_back(scratchedMetalSRV);
 
 	//Create Materials
 	CreateMaterials();
@@ -279,12 +220,15 @@ void Game::LoadAssets()
 		mat->AddSampler("BasicSampler", samplerState);
 
 
-		mat->AddTextureSRV("SurfaceTexture", srvSufaceTexuturesVector[i % srvSufaceTexuturesVector.size()]);
-		mat->AddTextureSRV("SpecularMap", srvSpecularMapVector[i % srvSufaceTexuturesVector.size()]);
+		mat->AddTextureSRV("AlbedoMap", srvAlbedoMapVector[i % srvAlbedoMapVector.size()]);
+		mat->AddTextureSRV("MetalnessMap", srvMetalMapVector[i % srvMetalMapVector.size()]);
+		mat->AddTextureSRV("RoughnessMap", srvRoughnessMapVector[i % srvRoughnessMapVector.size()]);
+
 
 		//top row uses flat normals
 		if (i < 3)
 			mat->AddTextureSRV("NormalMap", flatNormalSRV);
+
 		//every other row uses their normals
 		else
 			mat->AddTextureSRV("NormalMap", srvNormalMapVector[i % srvNormalMapVector.size()]);
@@ -327,7 +271,7 @@ void Game::LoadShaders()
 void Game::CreateMaterials()
 {
 	for (int i = 0; i < 6; i++)
-		materials.push_back(std::make_shared<Material>(1.0f, DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), pixelShaders[0], vertexShaders[0]));
+		materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), pixelShaders[0], vertexShaders[0]));
 }
 
 
@@ -346,16 +290,10 @@ void Game::CreateEntites()
 
 		shared_ptr<Material> material;
 		if (i / columnNum == 0)
-		{
 			material = materials[i % (flatMaterialNum)];
-			printf("%d: flat\n", i);
-		}
 
 		else
-		{
 			material = materials[flatMaterialNum + (i % columnNum)];
-			printf("%d: not flat\n", i);
-		}
 
 		entities.push_back(Entity(meshes[i % meshes.size()], material));
 
@@ -504,13 +442,6 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 				XMFLOAT3 rot = t->GetPitchYawRoll();
 				XMFLOAT3 scale = t->GetScale();
 				XMFLOAT4 colorTint = e.GetColorTint();
-				float roughness = e.GetMaterial()->GetRoughness();
-
-
-				if (ImGui::DragFloat("Roughness", &roughness, 0.01f, 0.0f, 1.0f))
-				{
-					e.GetMaterial()->SetRoughness(roughness);
-				}
 
 				if (ImGui::DragFloat3("Position", &pos.x, 0.01f, -10.0f, 10.0f))
 					t->SetPosition(pos);
@@ -590,7 +521,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	//start drawing
 
-	int columnNum = meshes.size();
+	size_t columnNum = meshes.size();
 
 	for (int i = 0; i < entityNum; i++)
 	{

@@ -11,24 +11,20 @@ private:
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> textureSRVs;
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11SamplerState>> samplers;
 
-	float roughness;
 	float Clamp(float val);
 public:
-	Material(float roughness, DirectX::XMFLOAT4 colorTint, 
+	Material(DirectX::XMFLOAT4 colorTint, 
 		std::shared_ptr<SimplePixelShader> pixelShader,
 		std::shared_ptr<SimpleVertexShader> vertexShader);
 
 	DirectX::XMFLOAT4 GetColorTint();
 	std::shared_ptr<SimplePixelShader> GetPixelShader();
 	std::shared_ptr<SimpleVertexShader> GetVertexShader();
-	float GetRoughness();
 
-	void SetRoughness(float roughness);
 	void SetColorTint(DirectX::XMFLOAT4 colorTint);
 	void SetPixelShader(std::shared_ptr<SimplePixelShader> pixelShader);
 	void SetVertexShader(std::shared_ptr<SimpleVertexShader> vertexShader);
 	
-
 	void AddTextureSRV(std::string name, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureSRV);
 	void AddSampler(std::string name, Microsoft::WRL::ComPtr<ID3D11SamplerState> sampler);
 	void SetLights(std::string name, const void* data, unsigned int size);

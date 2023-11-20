@@ -34,7 +34,6 @@ void Entity::Draw(std::shared_ptr<Camera> camera)
 
 	ps->SetFloat4("colorTint", material->GetColorTint());
 	ps->SetFloat3("cameraPosition", camera->GetTransform()->GetPosition());
-	ps->SetFloat("roughness", material->GetRoughness());
 	ps->CopyAllBufferData();
 
 	

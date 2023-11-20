@@ -1,6 +1,8 @@
 #include "ShaderIncludes.hlsli"
 
 #define MAX_LIGHTS 128
+static const float F0_NON_METAL = 0.04f;
+
 cbuffer ExternalData : register(b0)
 {
     float4 colorTint;
@@ -13,9 +15,10 @@ cbuffer ExternalData : register(b0)
     int useGammaCorrection;
 }
 
-Texture2D SurfaceTexture : register(t0); // "t" registers for textures
-Texture2D SpecularMap : register(t1);
-Texture2D NormalMap : register(t2);
+Texture2D AlbedoMap : register(t0); // "t" registers for textures
+Texture2D NormalMap : register(t1);
+Texture2D RoughnessMap : register(t2);
+Texture2D MetalnessMap : register(t3);
 SamplerState BasicSampler : register(s0); // "s" registers for samplers
 
 // --------------------------------------------------------
@@ -49,22 +52,29 @@ float4 main(VertexToPixel input) : SV_TARGET
     unpackedNormal = normalize(unpackedNormal);
     input.normal = mul(unpackedNormal, TBN); 
     
-    float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb;
+    float3 surfaceColor = AlbedoMap.Sample(BasicSampler, input.uv).rgb;
     
     //uncorrect the gamma from the texture if using gammaCorrect
     surfaceColor = useGammaCorrection ? pow(surfaceColor, 2.2f) : surfaceColor;
     
     surfaceColor *= colorTint.rgb;
     
-    float specularScale = SpecularMap.Sample(BasicSampler, input.uv).b;
+    float roughness = RoughnessMap.Sample(BasicSampler, input.uv).r;
     
-    float3 lightSum = surfaceColor * ambient;
+    float metalness = MetalnessMap.Sample(BasicSampler, input.uv).r;
+    
+    // Assume albedo texture is actually holding specular color where metalness == 1
+    // Note the use of lerp here - metal is generally 0 or 1, but might be in between
+    // because of linear texture sampling, so we lerp the specular color to match
+    float3 specularColor = lerp(F0_NON_METAL, surfaceColor.rgb, metalness);
+    
+    float3 lightSum = float3(0,0,0);
    
     int lightUsed = lightNum > MAX_LIGHTS ? MAX_LIGHTS : lightNum;
     
     for (int i = 0; i < lightUsed; i++)
     {
-        lightSum += GetLightColor(lights[i], input.normal, cameraPosition, input.worldPosition, roughness, float4(surfaceColor, 1.0f), specularScale);
+        lightSum += GetLightColorCookTorrenceSpecular(lights[i], input.normal, cameraPosition, input.worldPosition, roughness, metalness, surfaceColor, F0_NON_METAL);
     }
     
     //aply gamma correction
