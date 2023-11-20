@@ -32,16 +32,9 @@ SamplerState BasicSampler : register(s0); // "s" registers for samplers
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	// Just return the input color
-	// - This color (like most values passing through the rasterizer) is 
-	//   interpolated for each pixel between the corresponding vertices 
-	//   of the triangle we're rendering
-    // Adjust the variables below as necessary to work with your own code
     input.normal = normalize(input.normal);
     input.tangent = normalize(input.tangent);
-
-    // Feel free to adjust/simplify this code to fit with your existing shader(s)
-    // Simplifications include not re-normalizing the same vector more than once!
+    
     float3 N = input.normal; // Must be normalized here or before
     float3 T = input.tangent; // Must be normalized here or before
     T = normalize(T - N * dot(T, N)); // Gram-Schmidt assumes T&N are normalized!
@@ -53,7 +46,7 @@ float4 main(VertexToPixel input) : SV_TARGET
     input.normal = mul(unpackedNormal, TBN); 
     
     float3 surfaceColor = AlbedoMap.Sample(BasicSampler, input.uv).rgb;
-    
+
     //uncorrect the gamma from the texture if using gammaCorrect
     surfaceColor = useGammaCorrection ? pow(surfaceColor, 2.2f) : surfaceColor;
     
@@ -74,7 +67,7 @@ float4 main(VertexToPixel input) : SV_TARGET
     
     for (int i = 0; i < lightUsed; i++)
     {
-        lightSum += GetLightColorCookTorrenceSpecular(lights[i], input.normal, cameraPosition, input.worldPosition, roughness, metalness, surfaceColor, F0_NON_METAL);
+        lightSum += GetLightColorCookTorrenceSpecular(lights[i], input.normal, cameraPosition, input.worldPosition, roughness, metalness, surfaceColor, specularColor);
     }
     
     //aply gamma correction

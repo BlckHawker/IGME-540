@@ -172,7 +172,6 @@ void Game::LoadAssets()
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeRoughnessSRV, cobblestoneRoughnessSRV, scratchedRoughnessSRV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeMetalSRV, cobblestoneMetalSRV, scratchedMetalSRV;
 
-
 	//================================================================================
 
 	LoadTexture(L"../../Assets/Textures/Albedo Maps/bronze.png", bronzeAlbedoSRV);
@@ -182,7 +181,8 @@ void Game::LoadAssets()
 	LoadTexture(L"../../Assets/Textures/Normal Maps/bronze.png", bronzeNormalSRV);
 	LoadTexture(L"../../Assets/Textures/Normal Maps/cobblestone.png", cobblestoneNormalSRV);
 	LoadTexture(L"../../Assets/Textures/Normal Maps/scratched.png", scratchedNormalSRV);
-	LoadTexture(L"../../Assets/Textures/Normal Maps/flat.png", scratchedNormalSRV);
+	LoadTexture(L"../../Assets/Textures/Normal Maps/flat.png", flatNormalSRV);
+
 
 	LoadTexture(L"../../Assets/Textures/Roughness Maps/bronze.png", bronzeRoughnessSRV);
 	LoadTexture(L"../../Assets/Textures/Roughness Maps/cobblestone.png", cobblestoneRoughnessSRV);
