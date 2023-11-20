@@ -200,7 +200,7 @@ float3 CalculatePointLightCookTorrenceSpecular(Light light, float3 normal, float
     float3 balancedDiff = DiffuseEnergyConserve(diffuseAmount, F, metalness);
     
     // Combine the final diffuse and specular values for this light
-    return (balancedDiff * surfaceColor + specularAmount) * light.Intensity * light.Color;
+    return (balancedDiff * surfaceColor + specularAmount) * light.Intensity * light.Color * attenuation;
 }
 
 
