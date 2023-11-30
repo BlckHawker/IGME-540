@@ -167,31 +167,33 @@ void Game::LoadAssets()
 	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> srvAlbedoMapVector, srvNormalMapVector, srvRoughnessMapVector, srvMetalMapVector;
 
 	//Shader Resource View
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeAlbedoSRV, cobblestoneAlbedoSRV, scratchedAlbedoSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeNormalSRV, cobblestoneNormalSRV, scratchedNormalSRV, flatNormalSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeRoughnessSRV, cobblestoneRoughnessSRV, scratchedRoughnessSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeMetalSRV, cobblestoneMetalSRV, scratchedMetalSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeAlbedoSRV, cobblestoneAlbedoSRV, scratchedAlbedoSRV, woodAlbedoSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeNormalSRV, cobblestoneNormalSRV, scratchedNormalSRV, flatNormalSRV, woodNormalSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeRoughnessSRV, cobblestoneRoughnessSRV, scratchedRoughnessSRV, woodRoughnessSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeMetalSRV, cobblestoneMetalSRV, scratchedMetalSRV, woodMetalSRV;
 
 	//================================================================================
 
 	LoadTexture(L"../../Assets/Textures/Albedo Maps/bronze.png", bronzeAlbedoSRV);
 	LoadTexture(L"../../Assets/Textures/Albedo Maps/cobblestone.png", cobblestoneAlbedoSRV);
 	LoadTexture(L"../../Assets/Textures/Albedo Maps/scratched.png", scratchedAlbedoSRV);
+	LoadTexture(L"../../Assets/Textures/Albedo Maps/wood.png", woodAlbedoSRV);
 
 	LoadTexture(L"../../Assets/Textures/Normal Maps/bronze.png", bronzeNormalSRV);
 	LoadTexture(L"../../Assets/Textures/Normal Maps/cobblestone.png", cobblestoneNormalSRV);
 	LoadTexture(L"../../Assets/Textures/Normal Maps/scratched.png", scratchedNormalSRV);
 	LoadTexture(L"../../Assets/Textures/Normal Maps/flat.png", flatNormalSRV);
-
+	LoadTexture(L"../../Assets/Textures/Normal Maps/wood.png", woodNormalSRV);
 
 	LoadTexture(L"../../Assets/Textures/Roughness Maps/bronze.png", bronzeRoughnessSRV);
 	LoadTexture(L"../../Assets/Textures/Roughness Maps/cobblestone.png", cobblestoneRoughnessSRV);
 	LoadTexture(L"../../Assets/Textures/Roughness Maps/scratched.png", scratchedRoughnessSRV);
+	LoadTexture(L"../../Assets/Textures/Roughness Maps/wood.png", woodRoughnessSRV);
 
 	LoadTexture(L"../../Assets/Textures/Metal Maps/bronze.png", bronzeMetalSRV);
 	LoadTexture(L"../../Assets/Textures/Metal Maps/cobblestone.png", cobblestoneMetalSRV);
 	LoadTexture(L"../../Assets/Textures/Metal Maps/scratched.png", scratchedMetalSRV);
-
+	LoadTexture(L"../../Assets/Textures/Metal Maps/wood.png", woodMetalSRV);
 
 	srvAlbedoMapVector.push_back(bronzeAlbedoSRV);
 	srvAlbedoMapVector.push_back(cobblestoneAlbedoSRV);
@@ -218,8 +220,6 @@ void Game::LoadAssets()
 		std::shared_ptr<Material> mat = materials[i];
 
 		mat->AddSampler("BasicSampler", samplerState);
-
-
 		mat->AddTextureSRV("AlbedoMap", srvAlbedoMapVector[i % srvAlbedoMapVector.size()]);
 		mat->AddTextureSRV("MetalnessMap", srvMetalMapVector[i % srvMetalMapVector.size()]);
 		mat->AddTextureSRV("RoughnessMap", srvRoughnessMapVector[i % srvRoughnessMapVector.size()]);
@@ -234,6 +234,13 @@ void Game::LoadAssets()
 			mat->AddTextureSRV("NormalMap", srvNormalMapVector[i % srvNormalMapVector.size()]);
 	}
 
+	floorMaterial->AddSampler("BasicSampler", samplerState);
+	floorMaterial->AddTextureSRV("AlbedoMap", woodAlbedoSRV);
+	floorMaterial->AddTextureSRV("NormalMap", woodNormalSRV);
+	floorMaterial->AddTextureSRV("MetalnessMap", woodMetalSRV);
+	floorMaterial->AddTextureSRV("RoughnessMap", woodRoughnessSRV);
+
+
 	CreateEntites();
 
 	CreateLights();
@@ -245,8 +252,8 @@ void Game::CreateLights()
 
 
 	lights[0].Color = DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f);
-	lights[0].Direction = DirectX::XMFLOAT3(-1.0f, 0.0f, 0.0f); //light points down
-	lights[0].Intensity = 1.0f;
+	lights[0].Direction = DirectX::XMFLOAT3(0.0f, -1.0f, 0.0f); //light points down
+	lights[0].Intensity = 2.0f;
 }
 
 
@@ -272,6 +279,8 @@ void Game::CreateMaterials()
 {
 	for (int i = 0; i < 6; i++)
 		materials.push_back(std::make_shared<Material>(DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), pixelShaders[0], vertexShaders[0]));
+
+	floorMaterial = std::make_shared<Material>(DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), pixelShaders[0], vertexShaders[0]);
 }
 
 
@@ -306,6 +315,12 @@ void Game::CreateEntites()
 		//Move down based on the row you're on
 		entities[i].GetTransform()->MoveAbsolute(0.0f, -3.0f * (i / columnNum), 0.0f);
 	}
+
+	//create floor entity
+	floorEntity = std::make_shared<Entity>(meshes[0], floorMaterial);
+	floorEntity->GetTransform()->MoveAbsolute(0.0, -8.0f, -3.0f);
+	floorEntity->GetTransform()->Scale(10.0f, 0.1f, 10.0f);
+
 }
 
 void Game::CameraInput(float deltaTime)
@@ -370,9 +385,6 @@ void Game::Update(float deltaTime, float totalTime)
 	}
 
 	CameraInput(deltaTime);
-
-
-	
 
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::GetInstance().KeyDown(VK_ESCAPE))
@@ -523,6 +535,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	size_t columnNum = meshes.size();
 
+	
 	for (int i = 0; i < entityNum; i++)
 	{
 		Entity entity = entities[i];
@@ -538,6 +551,13 @@ void Game::Draw(float deltaTime, float totalTime)
 		entity.GetMaterial()->GetPixelShader()->CopyAllBufferData();
 		entity.Draw(cameras[activeCameraIndex]);
 	}
+
+	//draw floor
+	floorEntity->GetMaterial()->SetLights("lights", &lights[0], sizeof(Light) * (int)lights.size());
+	floorEntity->GetMaterial()->SetTextureData();
+	floorEntity->GetMaterial()->GetPixelShader()->SetFloat3("ambient", DirectX::XMFLOAT3(0.59f, 0.42f, 0.52f));
+	floorEntity->GetMaterial()->GetPixelShader()->SetInt("lightNum", (int)lights.size());
+	floorEntity->Draw(cameras[activeCameraIndex]);
 
 	//draw skybox last
 	skyBox->Draw(cameras[activeCameraIndex]);

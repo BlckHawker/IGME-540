@@ -60,6 +60,7 @@ private:
 	std::vector<std::shared_ptr<SimpleVertexShader>> skyBoxVertexShaders;
 	std::vector<std::shared_ptr<SimplePixelShader>> skyBoxPixelShaders;
 
+
 	std::vector<std::shared_ptr<Mesh>> meshes;
 
 	std::vector<std::shared_ptr<Material>> materials;
@@ -74,5 +75,9 @@ private:
 	std::vector<Light> lights;
 
 	bool rotate = true; //tells emttites to rotate
+
+	shared_ptr<Material> floorMaterial;
+	std::shared_ptr<Entity> floorEntity;
+
 };
 
