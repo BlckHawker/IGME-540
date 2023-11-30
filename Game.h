@@ -66,7 +66,7 @@ private:
 
 	std::shared_ptr<Sky> skyBox;
 
-	const int entityNum = 6; //the amount of entities that will spawn
+	const int entityNum = 9; //the amount of entities that will spawn
 	std::vector<Entity> entities;
 
 	int activeCameraIndex = 1;

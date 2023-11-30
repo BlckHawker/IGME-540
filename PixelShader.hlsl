@@ -1,17 +1,24 @@
 #include "ShaderIncludes.hlsli"
+
+#define MAX_LIGHTS 128
+static const float F0_NON_METAL = 0.04f;
+
 cbuffer ExternalData : register(b0)
 {
     float4 colorTint;
     float roughness;
     float3 cameraPosition;
     float3 ambient;
-    Light lights[2];  
+    Light lights[MAX_LIGHTS];
+    int lightNum;
     float2 uvOffset;
+    int useGammaCorrection;
 }
 
-Texture2D SurfaceTexture : register(t0); // "t" registers for textures
-Texture2D SpecularMap : register(t1);
-Texture2D NormalMap : register(t2);
+Texture2D AlbedoMap : register(t0); // "t" registers for textures
+Texture2D NormalMap : register(t1);
+Texture2D RoughnessMap : register(t2);
+Texture2D MetalnessMap : register(t3);
 SamplerState BasicSampler : register(s0); // "s" registers for samplers
 
 // --------------------------------------------------------
@@ -25,16 +32,9 @@ SamplerState BasicSampler : register(s0); // "s" registers for samplers
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	// Just return the input color
-	// - This color (like most values passing through the rasterizer) is 
-	//   interpolated for each pixel between the corresponding vertices 
-	//   of the triangle we're rendering
-    // Adjust the variables below as necessary to work with your own code
     input.normal = normalize(input.normal);
     input.tangent = normalize(input.tangent);
-
-    // Feel free to adjust/simplify this code to fit with your existing shader(s)
-    // Simplifications include not re-normalizing the same vector more than once!
+    
     float3 N = input.normal; // Must be normalized here or before
     float3 T = input.tangent; // Must be normalized here or before
     T = normalize(T - N * dot(T, N)); // Gram-Schmidt assumes T&N are normalized!
@@ -43,19 +43,35 @@ float4 main(VertexToPixel input) : SV_TARGET
     
     float3 unpackedNormal = NormalMap.Sample(BasicSampler, input.uv).rgb * 2.0f - 1.0f;
     unpackedNormal = normalize(unpackedNormal);
+    input.normal = mul(unpackedNormal, TBN); 
     
-    // Assumes that input.normal is the normal later in the shader
-    input.normal = mul(unpackedNormal, TBN); // Note multiplication order!
+    float3 surfaceColor = AlbedoMap.Sample(BasicSampler, input.uv).rgb;
+
+    //uncorrect the gamma from the texture if using gammaCorrect
+    surfaceColor = useGammaCorrection ? pow(surfaceColor, 2.2f) : surfaceColor;
     
-    float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb * colorTint.rgb;
-    float specularScale = SpecularMap.Sample(BasicSampler, input.uv).b;
+    surfaceColor *= colorTint.rgb;
     
-    float3 lightSum = surfaceColor * ambient;
+    float roughness = RoughnessMap.Sample(BasicSampler, input.uv).r;
     
-    for (int i = 0; i < 2; i++)
+    float metalness = MetalnessMap.Sample(BasicSampler, input.uv).r;
+    
+    // Assume albedo texture is actually holding specular color where metalness == 1
+    // Note the use of lerp here - metal is generally 0 or 1, but might be in between
+    // because of linear texture sampling, so we lerp the specular color to match
+    float3 specularColor = lerp(F0_NON_METAL, surfaceColor.rgb, metalness);
+    
+    float3 lightSum = float3(0,0,0);
+   
+    int lightUsed = lightNum > MAX_LIGHTS ? MAX_LIGHTS : lightNum;
+    
+    for (int i = 0; i < lightUsed; i++)
     {
-        lightSum += GetLightColor(lights[i], input.normal, cameraPosition, input.worldPosition, roughness, float4(surfaceColor, 1.0f), specularScale);
+        lightSum += GetLightColorCookTorrenceSpecular(lights[i], input.normal, cameraPosition, input.worldPosition, roughness, metalness, surfaceColor, specularColor);
     }
+    
+    //aply gamma correction
+    lightSum = useGammaCorrection ? pow(lightSum, 1.0f / 2.2f) : lightSum;
     
     return float4(lightSum, 1.0f);
 }
