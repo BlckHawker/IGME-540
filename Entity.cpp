@@ -10,10 +10,16 @@ Entity::Entity(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material)
 	colorTint = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	this->mesh = mesh;
 	this->material = material;
+	moveForward = true;
 }
 std::shared_ptr<Mesh> Entity::GetMesh()
 {
 	return mesh;
+}
+
+bool Entity::GetMoveForward()
+{
+	return moveForward;
 }
 
 std::shared_ptr<Transform> Entity::GetTransform()
@@ -57,6 +63,11 @@ std::shared_ptr<Material> Entity::GetMaterial()
 void Entity::SetMaterial(std::shared_ptr<Material> material)
 {
 	this->material = material;
+}
+
+void Entity::SetMoveForward(bool moveForward)
+{
+	this->moveForward = moveForward;
 }
 
 void Entity::SetColorTint(DirectX::XMFLOAT4 colorTint)

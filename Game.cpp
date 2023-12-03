@@ -321,6 +321,13 @@ void Game::CreateEntites()
 	floorEntity->GetTransform()->MoveAbsolute(0.0, -8.0f, -3.0f);
 	floorEntity->GetTransform()->Scale(10.0f, 0.1f, 10.0f);
 
+	//change the first three entities z pos for assignment 11
+	entities[0].GetTransform()->MoveAbsolute(0.0f, 0.0f, -10.0f);
+	entities[1].GetTransform()->MoveAbsolute(0.0f, 0.0f, 3.0f);
+	entities[2].GetTransform()->MoveAbsolute(0.0f, 0.0f, 0.0f);
+
+
+
 }
 
 void Game::CameraInput(float deltaTime)
@@ -376,19 +383,41 @@ void Game::OnResize()
 // --------------------------------------------------------
 void Game::Update(float deltaTime, float totalTime)
 {
+	// Example input checking: Quit if the escape key is pressed
+	if (Input::GetInstance().KeyDown(VK_ESCAPE))
+		Quit();
+
 	ImGuiInitialization(deltaTime, this->windowHeight, this->windowWidth);
+
+	float maxZ = 3.0f;
+	float minZ = -10.0f;
+	float moveAmount = 5.0f;
 
 	if (rotate)
 	{
 		for (auto& e : entities)
 			e.GetTransform()->Rotate(0, -deltaTime * 0.25f, 0);
+
+		for (int i = 0; i < 3; i++)
+		{
+			//make it so only the first row moves back and forth
+			if (entities[i].GetMoveForward())
+			{
+				entities[i].GetTransform()->MoveAbsolute(0, 0, moveAmount * deltaTime);
+				if (entities[i].GetTransform()->GetPosition().z >= maxZ)
+					entities[i].SetMoveForward(false);
+			}
+
+			else
+			{
+				entities[i].GetTransform()->MoveAbsolute(0, 0, -moveAmount * deltaTime);
+				if (entities[i].GetTransform()->GetPosition().z <= minZ)
+					entities[i].SetMoveForward(true);
+			}
+		}
 	}
 
 	CameraInput(deltaTime);
-
-	// Example input checking: Quit if the escape key is pressed
-	if (Input::GetInstance().KeyDown(VK_ESCAPE))
-		Quit();
 }
 
 void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsigned int windowWidth)
