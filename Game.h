@@ -20,6 +20,8 @@
 #include <vector>
 #include <memory>
 
+using namespace DirectX;
+
 class Game : public DXCore
 {
 
@@ -44,6 +46,8 @@ private:
 	void CameraInput(float dt);
 	void LoadAssets();
 	void CreateLights();
+	void CreateShadowMapResources();
+	void RenderShadowMap();
 
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
@@ -68,7 +72,7 @@ private:
 	std::shared_ptr<Sky> skyBox;
 
 	const int entityNum = 9; //the amount of entities that will spawn
-	std::vector<Entity> entities;
+	std::vector<shared_ptr<Entity>> entities;
 
 	int activeCameraIndex = 1;
 	std::vector< std::shared_ptr<Camera>> cameras;
@@ -78,6 +82,16 @@ private:
 
 	shared_ptr<Material> floorMaterial;
 	std::shared_ptr<Entity> floorEntity;
+
+
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> shadowDSV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shadowSRV;
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState> shadowRasterizer;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> shadowSampler;
+	DirectX::XMFLOAT4X4 shadowViewMatrix;
+	DirectX::XMFLOAT4X4 shadowProjectionMatrix;
+	int shadowMapResolution = 1024; // Ideally a power of 2 (like 1024)
+
 
 };
 
