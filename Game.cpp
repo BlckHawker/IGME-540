@@ -850,8 +850,8 @@ void Game::BloomPostProcessing()
 	context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), 0);
 	
 	ppPS->SetFloat("blurRadius", blurAmount);
-	ppPS->SetFloat("pixelWidth", 1);
-	ppPS->SetFloat("pixelHeight", 1);
+	ppPS->SetFloat("pixelWidth", float(1/windowWidth));
+	ppPS->SetFloat("pixelHeight", float(1 / windowHeight));
 
 	ppPS->CopyAllBufferData();
 
