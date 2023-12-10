@@ -17,7 +17,6 @@ struct VertexShaderInput
     float3 normal : NORMAL;
     float2 uv : TEXCOORD;
     float3 tangent : TANGENT;
-	
 };
 
 // Struct representing the data we're sending down the pipeline
@@ -37,6 +36,7 @@ struct VertexToPixel
     float2 uv : TEXCOORD;
     float3 worldPosition : POSITION;
     float3 tangent : TANGENT;
+    float4 shadowMapPos : SHADOW_POSITION;
 };
 
 #define LIGHT_TYPE_DIRECTIONAL 0

@@ -19,7 +19,9 @@ Texture2D AlbedoMap : register(t0); // "t" registers for textures
 Texture2D NormalMap : register(t1);
 Texture2D RoughnessMap : register(t2);
 Texture2D MetalnessMap : register(t3);
+Texture2D ShadowMap : register(t4);
 SamplerState BasicSampler : register(s0); // "s" registers for samplers
+SamplerComparisonState ShadowSampler : register(s1);
 
 // --------------------------------------------------------
 // The entry point (main method) for our pixel shader
@@ -61,13 +63,26 @@ float4 main(VertexToPixel input) : SV_TARGET
     // because of linear texture sampling, so we lerp the specular color to match
     float3 specularColor = lerp(F0_NON_METAL, surfaceColor.rgb, metalness);
     
+    
+    // Perform the perspective divide (divide by W) ourselves
+    input.shadowMapPos /= input.shadowMapPos.w;
+    // Convert the normalized device coordinates to UVs for sampling
+    float2 shadowUV = input.shadowMapPos.xy * 0.5f + 0.5f;
+    shadowUV.y = 1 - shadowUV.y; // Flip the Y
+    // Grab the distances we need: light-to-pixel and closest-surface
+    float distToLight = input.shadowMapPos.z;
+    
+    float shadowAmount = ShadowMap.SampleCmpLevelZero(ShadowSampler,shadowUV,distToLight).r;
+    
     float3 lightSum = float3(0,0,0);
    
     int lightUsed = lightNum > MAX_LIGHTS ? MAX_LIGHTS : lightNum;
     
     for (int i = 0; i < lightUsed; i++)
     {
-        lightSum += GetLightColorCookTorrenceSpecular(lights[i], input.normal, cameraPosition, input.worldPosition, roughness, metalness, surfaceColor, specularColor);
+        float3 lightResult = GetLightColorCookTorrenceSpecular(lights[i], input.normal, cameraPosition, input.worldPosition, roughness, metalness, surfaceColor, specularColor);
+        
+        lightSum += i == 0 ? (lightResult * shadowAmount) : lightResult;
     }
     
     //aply gamma correction
