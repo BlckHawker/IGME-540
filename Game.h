@@ -48,6 +48,11 @@ private:
 	void CreateLights();
 	void CreateShadowMapResources();
 	void RenderShadowMap();
+	void BloomPostProcessing();
+
+
+	const float windowWidth = 1280;
+	const float windowHeight = 720;
 
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
@@ -84,6 +89,7 @@ private:
 	std::shared_ptr<Entity> floorEntity;
 
 
+	//shadow map stuff
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> shadowDSV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shadowSRV;
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> shadowRasterizer;
@@ -91,6 +97,20 @@ private:
 	DirectX::XMFLOAT4X4 shadowViewMatrix;
 	DirectX::XMFLOAT4X4 shadowProjectionMatrix;
 	int shadowMapResolution = 1024; // Ideally a power of 2 (like 1024)
+
+
+	// Resources that are shared among all post processes
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> ppSampler;
+	std::shared_ptr<SimpleVertexShader> ppVS;
+
+	// Resources that are tied to a particular post process
+	std::shared_ptr<SimplePixelShader> ppPS;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> ppRTV; // For rendering
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ppSRV; // For sampling
+
+	float blurAmount = 0;
+
+
 
 
 };

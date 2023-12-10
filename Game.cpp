@@ -95,6 +95,58 @@ void Game::Init()
 
 	}
 
+	//Post processing set up
+	D3D11_SAMPLER_DESC ppSampDesc = {};
+	ppSampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+	ppSampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+	ppSampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	ppSampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	ppSampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	device->CreateSamplerState(&ppSampDesc, ppSampler.GetAddressOf());
+
+	//render target creation
+
+	// Describe the texture we're creating
+	D3D11_TEXTURE2D_DESC textureDesc = {};
+	textureDesc.Width = windowWidth;
+	textureDesc.Height = windowHeight;
+	textureDesc.ArraySize = 1;
+	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	textureDesc.CPUAccessFlags = 0;
+	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc.MipLevels = 1;
+	textureDesc.MiscFlags = 0;
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.SampleDesc.Quality = 0;
+	textureDesc.Usage = D3D11_USAGE_DEFAULT;
+	// Create the resource (no need to track it after the views are created below)
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> ppTexture;
+	device->CreateTexture2D(&textureDesc, 0, ppTexture.GetAddressOf());
+
+	// Create the Render Target View
+	D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+	rtvDesc.Format = textureDesc.Format;
+	rtvDesc.Texture2D.MipSlice = 0;
+	rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+	device->CreateRenderTargetView(
+		ppTexture.Get(),
+		&rtvDesc,
+		ppRTV.ReleaseAndGetAddressOf());
+	// Create the Shader Resource View
+	// By passing it a null description for the SRV, we
+	// get a "default" SRV that has access to the entire resource
+	device->CreateShaderResourceView(
+		ppTexture.Get(),
+		0,
+		ppSRV.ReleaseAndGetAddressOf());
+
+	//set up shaders
+	ppVS = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"FullScreenVertexShader.cso").c_str());
+	ppPS = std::make_shared<SimplePixelShader>(device, context, FixPath(L"BoxBlurPostProcessPixelShader.cso").c_str());
+
+
+
+
 	// Initialize ImGui
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -573,12 +625,26 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 	Input& input = Input::GetInstance();
 	input.SetKeyboardCapture(io.WantCaptureKeyboard);
 	input.SetMouseCapture(io.WantCaptureMouse);
-	ImGui::Image(shadowSRV.Get(), ImVec2(512, 512));
+
+
+
+	if (ImGui::DragFloat("Blur", &blurAmount, 0.01f, 0.0f, 5.0f))
+	{
+		blurAmount = blurAmount;
+	}
+
+
 	if (ImGui::TreeNode("Controls"))
 	{
 		ImGui::Text("Q/E: Up/Down");
 		ImGui::Text("W/S: Fowards/Backwards");
 		ImGui::Text("A/D: Left/Right");
+		ImGui::TreePop();
+	}
+
+	if (ImGui::TreeNode("Shadow Map Image Debugger"))
+	{
+		ImGui::Image(shadowSRV.Get(), ImVec2(512, 512));
 		ImGui::TreePop();
 	}
 
@@ -696,11 +762,15 @@ void Game::Draw(float deltaTime, float totalTime)
 		context->ClearDepthStencilView(depthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
 
-	//start drawing
+	//post precessing - Pre Render
+	const float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f }; // Black
+	//context->ClearRenderTargetView(ppRTV.Get(), clearColor);
 
-	size_t columnNum = meshes.size();
-
+	//swap acive rendering target
+	context->OMSetRenderTargets(1, ppRTV.GetAddressOf(), depthBufferDSV.Get());
 	
+	//start drawing - redering as normal
+	size_t columnNum = meshes.size();
 
 	//Shadow map
 	RenderShadowMap();
@@ -742,13 +812,18 @@ void Game::Draw(float deltaTime, float totalTime)
 	//draw skybox last
 	skyBox->Draw(cameras[activeCameraIndex]);
 
-	// Draw ImGui
-	ImGui::Render();
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	//post processing - post render
+	BloomPostProcessing();
 
 	//unbind the srv
 	ID3D11ShaderResourceView* nullSRVs[128] = {};
 	context->PSSetShaderResources(0, 128, nullSRVs);
+
+	// Draw ImGui
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+
 
 	// Frame END
 	// - These should happen exactly ONCE PER FRAME
@@ -765,4 +840,28 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Must re-bind buffers after presenting, as they become unbound
 		context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), depthBufferDSV.Get());
 	}
+}
+
+void Game::BloomPostProcessing()
+{
+	// Activate shaders and bind resources
+	// Also set any required cbuffer data
+	//render to the back buffer
+	context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), 0);
+	
+	ppPS->SetFloat("blurRadius", blurAmount);
+	ppPS->SetFloat("pixelWidth", 1);
+	ppPS->SetFloat("pixelHeight", 1);
+
+	ppPS->CopyAllBufferData();
+
+	ppVS->SetShader();
+	ppPS->SetShader();
+	ppPS->SetShaderResourceView("Pixels", ppSRV.Get());
+	ppPS->SetSamplerState("ClampSampler", ppSampler.Get());
+
+	// Draw exactly 3 vertices for our "full screen triangle"
+
+	context->Draw(3, 0); // Draw exactly 3 vertices (one triangle)
+
 }
