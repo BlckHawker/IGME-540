@@ -626,9 +626,7 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 	input.SetKeyboardCapture(io.WantCaptureKeyboard);
 	input.SetMouseCapture(io.WantCaptureMouse);
 
-
-
-	if (ImGui::DragFloat("Blur", &blurAmount, 0.01f, 0.0f, 5.0f))
+	if (ImGui::DragFloat("Blur", &blurAmount, 0.01f, 0.0f, 10.0f))
 	{
 		blurAmount = blurAmount;
 	}
@@ -766,14 +764,16 @@ void Game::Draw(float deltaTime, float totalTime)
 	const float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f }; // Black
 	//context->ClearRenderTargetView(ppRTV.Get(), clearColor);
 
-	//swap acive rendering target
-	context->OMSetRenderTargets(1, ppRTV.GetAddressOf(), depthBufferDSV.Get());
+
 	
 	//start drawing - redering as normal
 	size_t columnNum = meshes.size();
 
 	//Shadow map
 	RenderShadowMap();
+
+	context->OMSetRenderTargets(1, ppRTV.GetAddressOf(), depthBufferDSV.Get());
+	//swap acive rendering target
 
 	for (int i = 0; i < entityNum; i++)
 	{
@@ -849,19 +849,18 @@ void Game::BloomPostProcessing()
 	//render to the back buffer
 	context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), 0);
 	
-	ppPS->SetFloat("blurRadius", blurAmount);
-	ppPS->SetFloat("pixelWidth", float(1/windowWidth));
-	ppPS->SetFloat("pixelHeight", float(1 / windowHeight));
+	ppPS->SetInt("blurRadius", blurAmount);
+	ppPS->SetFloat("pixelWidth", 1.0f / windowWidth);
+	ppPS->SetFloat("pixelHeight", 1.0f / windowHeight);
+	printf("%f\n", float(1 / (float)windowWidth));
 
 	ppPS->CopyAllBufferData();
-
 	ppVS->SetShader();
 	ppPS->SetShader();
 	ppPS->SetShaderResourceView("Pixels", ppSRV.Get());
 	ppPS->SetSamplerState("ClampSampler", ppSampler.Get());
 
 	// Draw exactly 3 vertices for our "full screen triangle"
-
 	context->Draw(3, 0); // Draw exactly 3 vertices (one triangle)
 
 }

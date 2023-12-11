@@ -50,10 +50,6 @@ private:
 	void RenderShadowMap();
 	void BloomPostProcessing();
 
-
-	const float windowWidth = 1280;
-	const float windowHeight = 720;
-
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
 	//     Component Object Model, which DirectX objects do
