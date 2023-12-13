@@ -626,7 +626,7 @@ void Game::ImGuiInitialization(float deltaTime, unsigned int windowHeight, unsig
 	input.SetKeyboardCapture(io.WantCaptureKeyboard);
 	input.SetMouseCapture(io.WantCaptureMouse);
 
-	if (ImGui::DragFloat("Blur", &blurAmount, 0.01f, 0.0f, 10.0f))
+	if (ImGui::DragInt("Blur", &blurAmount, 1, 0, 10))
 	{
 		blurAmount = blurAmount;
 	}
@@ -852,14 +852,11 @@ void Game::BloomPostProcessing()
 	ppPS->SetInt("blurRadius", blurAmount);
 	ppPS->SetFloat("pixelWidth", 1.0f / windowWidth);
 	ppPS->SetFloat("pixelHeight", 1.0f / windowHeight);
-	printf("%f\n", float(1 / (float)windowWidth));
-
 	ppPS->CopyAllBufferData();
 	ppVS->SetShader();
 	ppPS->SetShader();
 	ppPS->SetShaderResourceView("Pixels", ppSRV.Get());
 	ppPS->SetSamplerState("ClampSampler", ppSampler.Get());
-
 	// Draw exactly 3 vertices for our "full screen triangle"
 	context->Draw(3, 0); // Draw exactly 3 vertices (one triangle)
 
