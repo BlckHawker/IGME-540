@@ -56,6 +56,46 @@ Game::~Game()
 	ImGui::DestroyContext();
 }
 
+void Game::CreatePostProcessingResources()
+{
+	ppRTV.Reset();
+	ppSRV.Reset();
+
+	// Describe the texture we're creating
+	D3D11_TEXTURE2D_DESC textureDesc = {};
+	textureDesc.Width = windowWidth;
+	textureDesc.Height = windowHeight;
+	textureDesc.ArraySize = 1;
+	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	textureDesc.CPUAccessFlags = 0;
+	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc.MipLevels = 1;
+	textureDesc.MiscFlags = 0;
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.SampleDesc.Quality = 0;
+	textureDesc.Usage = D3D11_USAGE_DEFAULT;
+	// Create the resource (no need to track it after the views are created below)
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> ppTexture;
+	device->CreateTexture2D(&textureDesc, 0, ppTexture.GetAddressOf());
+
+	// Create the Render Target View
+	D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+	rtvDesc.Format = textureDesc.Format;
+	rtvDesc.Texture2D.MipSlice = 0;
+	rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+	device->CreateRenderTargetView(
+		ppTexture.Get(),
+		&rtvDesc,
+		ppRTV.ReleaseAndGetAddressOf());
+	// Create the Shader Resource View
+	// By passing it a null description for the SRV, we
+	// get a "default" SRV that has access to the entire resource
+	device->CreateShaderResourceView(
+		ppTexture.Get(),
+		0,
+		ppSRV.ReleaseAndGetAddressOf());
+}
+
 // --------------------------------------------------------
 // Called once per program, after Direct3D and the window
 // are initialized but before the game loop.
@@ -105,47 +145,11 @@ void Game::Init()
 	device->CreateSamplerState(&ppSampDesc, ppSampler.GetAddressOf());
 
 	//render target creation
-
-	// Describe the texture we're creating
-	D3D11_TEXTURE2D_DESC textureDesc = {};
-	textureDesc.Width = windowWidth;
-	textureDesc.Height = windowHeight;
-	textureDesc.ArraySize = 1;
-	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	textureDesc.CPUAccessFlags = 0;
-	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	textureDesc.MipLevels = 1;
-	textureDesc.MiscFlags = 0;
-	textureDesc.SampleDesc.Count = 1;
-	textureDesc.SampleDesc.Quality = 0;
-	textureDesc.Usage = D3D11_USAGE_DEFAULT;
-	// Create the resource (no need to track it after the views are created below)
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> ppTexture;
-	device->CreateTexture2D(&textureDesc, 0, ppTexture.GetAddressOf());
-
-	// Create the Render Target View
-	D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-	rtvDesc.Format = textureDesc.Format;
-	rtvDesc.Texture2D.MipSlice = 0;
-	rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-	device->CreateRenderTargetView(
-		ppTexture.Get(),
-		&rtvDesc,
-		ppRTV.ReleaseAndGetAddressOf());
-	// Create the Shader Resource View
-	// By passing it a null description for the SRV, we
-	// get a "default" SRV that has access to the entire resource
-	device->CreateShaderResourceView(
-		ppTexture.Get(),
-		0,
-		ppSRV.ReleaseAndGetAddressOf());
-
 	//set up shaders
 	ppVS = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"FullScreenVertexShader.cso").c_str());
 	ppPS = std::make_shared<SimplePixelShader>(device, context, FixPath(L"BoxBlurPostProcessPixelShader.cso").c_str());
 
-
-
+	CreatePostProcessingResources();
 
 	// Initialize ImGui
 	IMGUI_CHECKVERSION();
@@ -560,6 +564,8 @@ void Game::OnResize()
 
 	for (std::shared_ptr<Camera> camera : cameras)
 		camera->UpdateProjectionMatrix((float)this->windowWidth / this->windowHeight);
+
+	CreatePostProcessingResources();
 }
 
 // --------------------------------------------------------

@@ -49,6 +49,7 @@ private:
 	void CreateShadowMapResources();
 	void RenderShadowMap();
 	void BloomPostProcessing();
+	void CreatePostProcessingResources();
 
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
